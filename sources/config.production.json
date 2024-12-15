@@ -1,0 +1,8 @@
+{
+    "telegram": {
+        "token": "Токен лежит в config.local.json",
+        "auth": {
+            "242038191": {"login": "@Armalor", "name": "Николай Кутрухин"}
+        }
+    }
+}
