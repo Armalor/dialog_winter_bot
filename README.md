@@ -1,2 +1,2 @@
-# dialog_winter_bot
+# Dialog Winter Bot
 Бот для зимнего диалога
