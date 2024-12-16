@@ -96,13 +96,16 @@ def allocation_step(students: list[StudentModel], checkpoints: list[CheckpointMo
             rich.append(checkpoint)
 
     for p in poor:
-        print(f'БЕДНЫЙ КП: {p.name}')
+        print(f'БЕДНЫЙ КП: {p.name} ({p.total})')
+
+    # Здесь важно забрать не просто у богатого, а у самого богатого за все тики:
+    rich.sort(key=lambda x: x.total, reverse=True)
 
     if poor:
         print('')
         for r in rich:
-            print(f'БОГАТЫЙ КП: {r.name}')
-        ...
+            print(f'БОГАТЫЙ КП: {r.name} ({r.total})')
+            ...
 
     # ВНИМАНИЕ! НЕ МОЖЕМ раскулачивать последний КП на предпоследнем тике!!!
     if checkpoints[-2].kids and checkpoints[-1] in rich:
@@ -111,7 +114,6 @@ def allocation_step(students: list[StudentModel], checkpoints: list[CheckpointMo
 
     for p in poor:
         try:
-            random.shuffle(rich)
             for r in rich:
                 for student in r.students[-1]:
                     if p.name not in student.checkpoints:
@@ -120,6 +122,8 @@ def allocation_step(students: list[StudentModel], checkpoints: list[CheckpointMo
 
                         student.checkpoints.append(p.name)
                         p.students[-1].append(student)
+
+                        rich.remove(r)
 
                         raise DekulakizationException(f'Раскулачили «{r.name}» в пользу «{p.name}»')
         except DekulakizationException as dekul:
