@@ -1,6 +1,71 @@
 {
+    "logs": {
+        "version": 1,
+        "loggers":{
+            "main":{
+                "handlers": ["fileHandler", "consoleHandler", "telegram"],
+                "filters": ["icon_filter"],
+                "level": "DEBUG"
+            },
+            "file":{
+                "handlers": ["fileHandler", "consoleHandler"],
+                "filters": ["icon_filter"],
+                "level": "DEBUG"
+            },
+            "console":{
+                "handlers": ["consoleHandler"],
+                "level": "DEBUG"
+            }
+        },
+        "filters": {
+            "icon_filter": {
+                "()": "bots.telegram.filter.TelegramFilter"
+            }
+        },
+        "handlers": {
+            "fileHandler":{
+                "class":"logging.handlers.RotatingFileHandler",
+                "formatter":"fileFormatter",
+                "filename":"{__file__}.log",
+                "encoding": "utf-8",
+                "level":"DEBUG",
+                "maxBytes": 5242880,
+                "backupCount": 7
+            },
+            "consoleHandler":{
+                "class":"logging.StreamHandler",
+                "formatter":"consoleFormatter",
+                "level":"DEBUG"
+            },
+            "telegram": {
+                "class": "telegram_handler.TelegramHandler",
+                "token": "Токен лежит в config.local.json",
+                "chat_id": -4715780154,
+                "formatter":"telegramFormatter",
+                "level":"INFO"
+            }
+
+        },
+        "formatters":{
+            "fileFormatter":{
+                "format":"%(asctime)s - %(levelname)s -> %(message)s",
+                "datefmt": "%d.%m.%Y %H:%M"
+            },
+            "consoleFormatter":{
+                "format":"%(asctime)s - %(levelname)s -> %(message)s",
+                "datefmt": "%H:%M:%S"
+            },
+            "telegramFormatter": {
+                "class": "telegram_handler.HtmlFormatter",
+                "format": "%(icon)s %(asctime)s:\n%(message)s",
+                "datefmt": "%d.%m.%Y %H:%M"
+            }
+        }
+    },
+
     "telegram": {
         "token": "Токен лежит в config.local.json",
+        "url": "t.me/DialogWinterBot",
         "auth": {
             "242038191": {"login": "@Armalor", "name": "Николай Кутрухин"}
         }

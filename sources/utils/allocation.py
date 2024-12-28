@@ -96,7 +96,7 @@ def allocation_step(students: list[StudentModel], checkpoints: list[CheckpointMo
             rich.append(checkpoint)
 
     for p in poor:
-        print(f'БЕДНЫЙ КП: {p.name} ({p.total})')
+        print(f'БЕДНЫЙ КП: {p.name} ({p.total}) {len(p.students[-1])}')
 
     # Здесь важно забрать не просто у богатого, а у самого богатого за все тики:
     rich.sort(key=lambda x: x.total, reverse=True)
@@ -104,7 +104,7 @@ def allocation_step(students: list[StudentModel], checkpoints: list[CheckpointMo
     if poor:
         print('')
         for r in rich:
-            print(f'БОГАТЫЙ КП: {r.name} ({r.total})')
+            print(f'БОГАТЫЙ КП: {r.name} ({r.total}){len(r.students[-1])}')
             ...
 
     # ВНИМАНИЕ! НЕ МОЖЕМ раскулачивать последний КП на предпоследнем тике!!!
