@@ -6,3 +6,4 @@ pydantic-settings==2.6.1
 python-telegram-handler==2.2.1
 sshtunnel==0.4.0
 telebot==0.0.5
+telebot-calendar==1.2

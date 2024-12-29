@@ -5,6 +5,7 @@ from logging import Logger
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove, CallbackQuery
 from requests.exceptions import ReadTimeout, ConnectionError
 from urllib3.exceptions import ReadTimeoutError, ProtocolError
+from telebot_calendar import CallbackData
 from pprint import pprint
 
 # Локальный импорт:
@@ -23,25 +24,56 @@ class DialogWinterBot(ReporterBot):
     def __init__(self, _logger: Logger = None) -> None:
         super().__init__(_logger)
 
-        self.runner_dir = __root__ / 'parsers'
-
-        self.session_pid: int = -1
-
-        self.loading_document = False
+        self.register_callback = CallbackData("register", "role")
 
         @self.bot.message_handler(commands=['start'])
         def _(message): self._start(message)
 
+        @self.bot.callback_query_handler(func=lambda c: c.data and c.data.startswith(self.register_callback.prefix))
+        def _(callback_query): self._callback_register(callback_query)
+
     def _start(self, message):
+
         self.bot.send_message(
-            message.chat.id,
-            f"Привет! chat_id = {message.chat.id}; user_id = {message.from_user.id}; bot = {self.__class__.__name__}"
+            message.chat.id, text="Регистрация",
+            reply_markup=self.__get_register_keyboard()
         )
-        markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        btn1 = KeyboardButton("Как меня зовут?")
-        back = KeyboardButton("Вернуться в главное меню")
-        markup.add(btn1, back)
-        self.bot.send_message(message.chat.id, text="Задай мне вопрос", reply_markup=markup)
+
+    def _callback_register(self, call: CallbackQuery):
+        register, role = call.data.split(self.register_callback.sep)
+        print(register, role)
+
+        chat_id = call.message.chat_id
+        message_id = call.message.message_id
+        text = call.message.text
+
+        self.bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=message_id,
+            text=text,
+            reply_markup=self.__get_register_keyboard(role=role)
+        )
+
+    def __get_register_keyboard(self, role=None):
+
+        inline_kb = InlineKeyboardMarkup(row_width=1)
+
+        inline_kb.add(
+            InlineKeyboardButton(
+                'Регистрация участника' + ' ✅' if role == 'student' else '',
+                callback_data=self.register_callback.new('student')
+            ),
+            InlineKeyboardButton(
+                'Зарегистрировать друга' + ' ✅' if role == 'friend' else '',
+                callback_data=self.register_callback.new('friend')
+            ),
+            InlineKeyboardButton(
+                'Регистрация преподавателя' + ' ✅' if role == 'teacher' else '',
+                callback_data=self.register_callback.new('teacher')
+            ),
+        )
+
+        return inline_kb
 
 
 if __name__ == '__main__':
