@@ -1,5 +1,15 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Type
+from telebot.types import (
+    ReplyKeyboardMarkup,
+    KeyboardButton,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    ReplyKeyboardRemove,
+    CallbackQuery,
+    Message,
+)
+from telebot_calendar import CallbackData
 
 # Локальный импорт:
 import sys
@@ -14,12 +24,17 @@ class RegisterNotFoundException(Exception):
     pass
 
 
+register_callback = CallbackData("register", "role", "step")
+
+
 class Register(ABC):
 
     role: Optional[RolesEnum] = None
 
+    title = None
+
     def __init__(self):
-        ...
+        self.register_callback = register_callback
 
     @classmethod
     def factory(cls, role: RolesEnum) -> 'Register':
@@ -30,3 +45,7 @@ class Register(ABC):
             return class_()
 
         raise RegisterNotFoundException
+
+    @abstractmethod
+    def get_steps(self) -> InlineKeyboardMarkup:
+        pass

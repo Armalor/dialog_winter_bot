@@ -25,7 +25,7 @@ from config import Config
 from bots.reporter import ReporterBot
 from connector import DBConnector
 from models import RolesEnum
-from registers import Register
+from registers import Register, register_callback
 # ~Локальный импорт
 
 
@@ -34,30 +34,29 @@ class DialogWinterBot(ReporterBot):
     def __init__(self, _logger: Logger = None) -> None:
         super().__init__(_logger)
 
-        self.register_callback = CallbackData("register", "role")
-
         @self.bot.message_handler(commands=['start'])
         def _(message): self._start(message)
 
-        @self.bot.callback_query_handler(func=lambda c: c.data and c.data.startswith(self.register_callback.prefix))
+        @self.bot.callback_query_handler(func=lambda c: c.data and c.data.startswith(register_callback.prefix))
         def _(callback_query): self._callback_register(callback_query)
 
-    def __get_register_keyboard(self, role=None):
+    @staticmethod
+    def __get_register_keyboard(role=None):
 
         inline_kb = InlineKeyboardMarkup(row_width=1)
 
         inline_kb.add(
             InlineKeyboardButton(
-                'Регистрация участника' + (' ✅' if role == 'student' else ''),
-                callback_data=self.register_callback.new('student')
+                'Зарегистрироваться' + (' ✅' if role == 'student' else ''),
+                callback_data=register_callback.new('student', 'get_steps')
             ),
             InlineKeyboardButton(
                 'Зарегистрировать друга' + (' ✅' if role == 'friend' else ''),
-                callback_data=self.register_callback.new('friend')
+                callback_data=register_callback.new('friend', 'get_steps')
             ),
             InlineKeyboardButton(
                 'Регистрация преподавателя' + (' ✅' if role == 'teacher' else ''),
-                callback_data=self.register_callback.new('teacher')
+                callback_data=register_callback.new('teacher', 'get_steps')
             ),
         )
 
@@ -72,7 +71,9 @@ class DialogWinterBot(ReporterBot):
         )
 
     def _callback_register(self, call: CallbackQuery):
-        register, role = call.data.split(self.register_callback.sep)
+        register, role, step = call.data.split(register_callback.sep)
+
+        print(register, role, step)
 
         chat_id = call.message.chat.id
         message_id = call.message.message_id
@@ -85,29 +86,43 @@ class DialogWinterBot(ReporterBot):
             reply_markup=self.__get_register_keyboard(role=role)
         )
 
-        self.register_step(call.message, role)
+        self.register_step(call.message, role, step)
 
-    def register_step(self, message: Message, role, step=0):
+    def register_step(self, message: Message, role, step: str):
+
+        chat_id = message.chat.id
+        message_id = message.message_id
 
         register = Register.factory(role)
 
-        steps = {
-            0: {
-                RolesEnum.STUDENT: '<b>Введите ФИО:</b>',
-                RolesEnum.FRIEND: '<b>Введите ФИО друга:</b>',
-                RolesEnum.TEACHER: '<b>Введите ФИО—:</b>',
-            }
-        }
+        step_method = getattr(register, step, None)
+        if step_method and callable(step_method):
+            kb: InlineKeyboardMarkup = step_method()
 
-        print(role, step, register)
-        chat_id = message.chat.id
+            self.bot.edit_message_text(
+                chat_id=chat_id,
+                message_id=message_id,
+                text=register.title,
+                reply_markup=kb
+            )
 
-        self.bot.send_message(
-            chat_id=chat_id,
-            text=steps[step][role]
-        )
-
-        self.bot.register_next_step_handler(message, self.register_step, role, 'surname')
+        # steps = {
+        #     0: {
+        #         RolesEnum.STUDENT: '<b>Введите ФИО:</b>',
+        #         RolesEnum.FRIEND: '<b>Введите ФИО друга:</b>',
+        #         RolesEnum.TEACHER: '<b>Введите ФИО:</b>',
+        #     }
+        # }
+        #
+        # print(role, step, register)
+        # chat_id = message.chat.id
+        #
+        # self.bot.send_message(
+        #     chat_id=chat_id,
+        #     text=steps[step][role]
+        # )
+        #
+        # self.bot.register_next_step_handler(message, self.register_step, role, 'surname')
 
 
 if __name__ == '__main__':

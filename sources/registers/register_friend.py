@@ -6,11 +6,12 @@ from pathlib import Path
 __root__ = Path(__file__).resolve().parent.parent
 sys.path.append(__root__.__str__())
 from models import RolesEnum
-from .register import Register
+from .register_student import RegisterStudent
 # ~Локальный импорт
 
 
-class RegisterFriend(Register):
+class RegisterFriend(RegisterStudent):
 
     role: Optional[RolesEnum] = RolesEnum.FRIEND
 
+    title = 'Профиль друга'

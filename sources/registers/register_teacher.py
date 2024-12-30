@@ -1,4 +1,14 @@
 from typing import Optional
+from telebot.types import (
+    ReplyKeyboardMarkup,
+    KeyboardButton,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    ReplyKeyboardRemove,
+    CallbackQuery,
+    Message,
+)
+from telebot_calendar import CallbackData
 
 # Локальный импорт:
 import sys
@@ -13,4 +23,14 @@ from .register import Register
 class RegisterTeacher(Register):
 
     role: Optional[RolesEnum] = RolesEnum.TEACHER
+    title = 'Профиль препода'
 
+    def get_steps(self):
+        inline_kb = InlineKeyboardMarkup(row_width=1)
+
+        inline_kb.add(
+            InlineKeyboardButton('Чекпоинт:', callback_data=self.register_callback.new(self.role, 'step_checkpoint')),
+            InlineKeyboardButton('Тайминг:', callback_data=self.register_callback.new(self.role, 'step_timing')),
+        )
+
+        return inline_kb
