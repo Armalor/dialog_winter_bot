@@ -1,4 +1,4 @@
-from pydantic import Field, BaseModel
+from pydantic import Field, BaseModel, ConfigDict
 from typing import Optional
 
 
@@ -8,19 +8,31 @@ from pathlib import Path
 __root__ = Path(__file__).resolve().parent.parent
 sys.path.append(__root__.__str__())
 from config import Config
+from connector import DBConnector
 # ~Локальный импорт
 
 
 class StudentModel(BaseModel):
-    id: Optional[int] = Field(default=None)
-    surname: str = Field()
-    name: str = Field()
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int = Field()
+    friend_idx: int = Field(
+        default=0,
+        description="По сути это индекс в списке StudentsModel[id], где 0 — регистрация слушателя, больше 0 — друзей"
+    )
+    surname: Optional[str] = Field(default=None)
+    name: Optional[str] = Field(default=None)
     school: Optional[str] = Field(default=None)
-    class_: Optional[str] = Field(default=None)
+    cls: Optional[str] = Field(default=None)
     checkpoints: list[str] = Field(default_factory=list)
+
+
 
     # def __str__(self):
     #     return f'{self.surname} {self.name}'
+
+
+StudentsModel = dict[int, list[StudentModel]]
 
 
 if __name__ == '__main__':
@@ -28,11 +40,14 @@ if __name__ == '__main__':
 
     u1 = StudentModel(
         id=1,
+        friend_idx=0,
         surname='Афанасьев',
         name='Александр',
+        school='7',
+        cls='7',
     )
 
     print(u1)
-    j = u1.model_dump_json().encode()
+    j = u1.model_dump_json()
     print(j, type(j))
 

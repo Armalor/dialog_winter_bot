@@ -1,19 +1,22 @@
 from psycopg2 import connect
 from psycopg2._psycopg import connection
 from psycopg2.extensions import cursor
+from psycopg2.extras import RealDictCursor
 from os import path
+from typing import Literal, Callable
 import sys
 __path__ = path.dirname(path.abspath(__file__))
 sys.path.append(__path__)
 from config import Config
 from sshtunnel import SSHTunnelForwarder
+from functools import wraps
 
 
 class DBConnector:
-    def __init__(self, cursor_factory=None, db_config_key='db', autocommit=False, name=None) -> None:
+    def __init__(self, cursor_factory=RealDictCursor, db_config_key='db', autocommit=False, name=None) -> None:
         self.config = Config.get_instance().config[db_config_key]
-        self.conn: connection = False
-        self.cur: cursor = False
+        self.conn: connection | Literal[False] = False
+        self.cur: cursor | Literal[False] = False
         self.cursor_factory = cursor_factory
         self.autocommit = autocommit
         self.tunnel = None
@@ -72,3 +75,30 @@ class DBConnector:
 
 class DBConnectionError (Exception):
     pass
+
+
+def db_connector(func: Callable) -> Callable:
+    """Если в оборачиваемую функцию не передан курсор, то инициализируем соединение с БД"""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        cursor_ = None
+        for arg in args:
+            if isinstance(arg, cursor):
+                cursor_ = arg
+
+        for key, arg in kwargs.items():
+            # TODO: вот тут мы привязаны к имени параметра — 'cur':
+            if isinstance(arg, cursor) or 'key' == 'cur':
+                cursor_ = arg
+
+        if cursor_ is None:
+            with DBConnector() as cursor_:
+                # TODO: вот тут мы привязаны к имени параметра — 'cur':
+                kwargs['cur'] = cursor_
+                ret = func(*args, **kwargs)
+        else:
+            ret = func(*args, **kwargs)
+
+        return ret
+
+    return wrapper

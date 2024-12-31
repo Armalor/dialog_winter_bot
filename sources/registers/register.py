@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Type
+from telebot import TeleBot
 from telebot.types import (
     ReplyKeyboardMarkup,
     KeyboardButton,
@@ -33,16 +34,34 @@ class Register(ABC):
 
     title = None
 
-    def __init__(self):
+    def __init__(self, bot: TeleBot, initial_message: Message):
         self.register_callback = register_callback
+        self.bot = bot
+        self.initial_message = initial_message
+
+    @property
+    def user_id(self):
+        """
+        НЕТ, ЭТО НЕ ОШИБКА!
+        Идентификатор пользователя (при общении с ботом напрямую, не через группу) это message.chat.id.
+        """
+        return self.initial_message.chat.id
+
+    @property
+    def chat_id(self):
+        return self.initial_message.chat.id
+
+    @property
+    def message_id(self):
+        return self.initial_message.id
 
     @classmethod
-    def factory(cls, role: RolesEnum) -> 'Register':
+    def factory(cls, role: RolesEnum, bot: TeleBot, initial_message: Message) -> 'Register':
 
         classes: dict[str, Type[cls]] = {c.role: c for c in cls.__subclasses__()}
         class_ = classes.get(role, None)
         if class_ is not None:
-            return class_()
+            return class_(bot=bot, initial_message=initial_message)
 
         raise RegisterNotFoundException
 

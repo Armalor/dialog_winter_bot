@@ -75,36 +75,37 @@ class DialogWinterBot(ReporterBot):
 
         print(register, role, step)
 
-        chat_id = call.message.chat.id
-        message_id = call.message.message_id
-        text = call.message.text
+        if 'get_steps' == step:
 
-        self.bot.edit_message_text(
-            chat_id=chat_id,
-            message_id=message_id,
-            text=text,
-            reply_markup=self.__get_register_keyboard(role=role)
-        )
-
-        self.register_step(call.message, role, step)
-
-    def register_step(self, message: Message, role, step: str):
-
-        chat_id = message.chat.id
-        message_id = message.message_id
-
-        register = Register.factory(role)
-
-        step_method = getattr(register, step, None)
-        if step_method and callable(step_method):
-            kb: InlineKeyboardMarkup = step_method()
+            chat_id = call.message.chat.id
+            message_id = call.message.message_id
+            text = call.message.text
 
             self.bot.edit_message_text(
                 chat_id=chat_id,
                 message_id=message_id,
-                text=register.title,
-                reply_markup=kb
+                text=text,
+                reply_markup=self.__get_register_keyboard(role=role)
             )
+
+        self.register_step(call.message, role, step)
+
+    def register_step(self, message: Message, role, step: str):
+        """
+        ВНИМАНИЕ! message.from_user.username / message.from_user.id выдаст «DialogWinterBot» (sic!) и его айдишник
+        соответственно — НЕ идентификатор пользователя, ведущего диалог с ботом, т.к. здесь мы редактируем сообщение
+        ОТ БОТА! Идентификатор пользователя (при общении с ботом напрямую, не через группу) это message.chat.id.
+        """
+
+
+        print(message.chat.last_name, message.chat.first_name)
+
+        register = Register.factory(role, self.bot, message)
+
+        step_method = getattr(register, step, None)
+        if step_method and callable(step_method):
+            step_method()
+
 
         # steps = {
         #     0: {

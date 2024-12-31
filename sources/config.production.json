@@ -1,4 +1,11 @@
 {
+    "db": {
+        "host": "127.0.0.1",
+        "user": "postgres",
+        "password": "postgres",
+        "port": "5435",
+        "database": "dialog_winter"
+    },
     "logs": {
         "version": 1,
         "loggers":{
