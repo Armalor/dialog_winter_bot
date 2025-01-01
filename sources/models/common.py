@@ -50,7 +50,7 @@ class CommonModel(BaseModel):
         if self.PKEY is None:
             on_conflict = 'do nothing'
         else:
-            conflict_placeholders = map(lambda x: f'{x} = EXCLUDE.{x})', cols)
+            conflict_placeholders = map(lambda x: f'{x} = EXCLUDED.{x}', cols)
             on_conflict = f"""({", ".join(self.PKEY)}) do update set 
                 {', '.join(conflict_placeholders)}
             """
@@ -61,6 +61,8 @@ class CommonModel(BaseModel):
             
             returning {self.TABLE}.*
         '''
+
+        print(_insert, self.dict())
 
         return _insert, self.dict()
 
@@ -95,19 +97,22 @@ class CommonModel(BaseModel):
         cur.execute(*self.__find_by_pkey)
         ret = cur.fetchone()
         # TODO: Вариант, что по первичному ключу ничего не нашли, пока не предусмотрен:
-        self.__dict__.update(ret)
+        if ret:
+            self.__dict__.update(ret)
+        else:
+            print(f'loaf: ничего не нашли')
 
         return self
 
     @db_connector
     def store(self, cur: cursor = None) -> Self:
 
-        # 1. Если первичного ключа нет, то это точно INSERT, т.к. других вариантов быть не может.
-        # 2. Если первичный ключ есть, но не задан в модели, это значит, что он генерируется последовательностью.
         cur.execute(*self.__insert)
         ret = cur.fetchone()
-
-        self.__dict__.update(ret)
+        if ret:
+            self.__dict__.update(ret)
+        else:
+            print(f'store: ничего не нашли')
 
         return self
 

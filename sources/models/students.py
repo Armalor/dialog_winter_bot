@@ -1,6 +1,5 @@
 from pydantic import Field, BaseModel, ConfigDict
-from typing import Optional
-
+from typing import Optional, ClassVar
 
 # Локальный импорт:
 import sys
@@ -8,12 +7,16 @@ from pathlib import Path
 __root__ = Path(__file__).resolve().parent.parent
 sys.path.append(__root__.__str__())
 from config import Config
+from models.common import CommonModel
 from connector import DBConnector
 # ~Локальный импорт
 
 
-class StudentModel(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class StudentModel(CommonModel):
+    # model_config = ConfigDict(from_attributes=True)
+
+    TABLE: ClassVar[str] = 'students'
+    PKEY: ClassVar[set] = {'id', 'friend_idx'}
 
     id: int = Field()
     friend_idx: int = Field(
@@ -25,8 +28,6 @@ class StudentModel(BaseModel):
     school: Optional[str] = Field(default=None)
     cls: Optional[str] = Field(default=None)
     checkpoints: list[str] = Field(default_factory=list)
-
-
 
     # def __str__(self):
     #     return f'{self.surname} {self.name}'
@@ -41,13 +42,25 @@ if __name__ == '__main__':
     u1 = StudentModel(
         id=1,
         friend_idx=0,
-        surname='Афанасьев',
-        name='Александр',
-        school='7',
-        cls='7',
+        # surname='Афанасьев',
+        # name='Александр',
+        # school='7',
+        # cls='11',
     )
 
     print(u1)
-    j = u1.model_dump_json()
-    print(j, type(j))
+
+    u1.load()
+
+    print(u1)
+
+    u1.__dict__.update({
+        'surname': 'Афанасьев',
+        'name': 'Александр',
+        'school': '7',
+        'cls': '11',
+    })
+
+    u1.store()
+
 
