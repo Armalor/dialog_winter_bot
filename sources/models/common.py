@@ -41,30 +41,43 @@ class CommonModel(BaseModel):
         return json.loads(self.json(exclude=exclude))
 
     @property
-    def __insert(self):
-
-        cols = self.dict(exclude=self.PKEY).keys()
-
-        placeholders = map(lambda x: f'%({x})s', cols)
+    def __upsert(self):
+        """
+        Upsert (insert → on conflict) для сохранения в БД.
+        Какие могут быть ситуации:
+        - Нет PK: это только insert, on conflict — разумеется — do nothing (т.к. никакого конфликта быть не может).
+        - Есть PK, но он (или какая-то часть) не передан: значит генерится автоматически и надо исключать из вставки.
+          «On conflict» при этом возникнуть не может, т.к. значения ключа не заданы.
+        - Есть PK и он весь задан: это может быть как insert, так и update, не нужно ничего исключать, может возникнуть
+          ситуация конфликта по ключу.
+        """
 
         if self.PKEY is None:
             on_conflict = 'do nothing'
+            exclude = set()
         else:
-            conflict_placeholders = map(lambda x: f'{x} = EXCLUDED.{x}', cols)
+            # См. «Есть PK, но он (или какая-то часть) не передан»:
+            exclude = {k for k in self.PKEY if self.__dict__.get(k) is None}
+
+            # Тем не менее, для conflict_placeholders мы все равно ПОЛНОСТЬЮ ИСКЛЮЧАЕМ PKEY (просто для подстраховки)!
+            conflict_cols = self.dict(exclude=self.PKEY).keys()
+            conflict_placeholders = map(lambda x: f'{x} = EXCLUDED.{x}', conflict_cols)
+
             on_conflict = f"""({", ".join(self.PKEY)}) do update set 
                 {', '.join(conflict_placeholders)}
             """
 
-        _insert = f'''
+        cols = self.dict(exclude=exclude).keys()
+        placeholders = map(lambda x: f'%({x})s', cols)
+
+        _upsert = f'''
             insert into {self.TABLE} ({', '.join(cols)}) values ({', '.join(placeholders)})
             on conflict {on_conflict} 
             
             returning {self.TABLE}.*
         '''
 
-        print(_insert, self.dict())
-
-        return _insert, self.dict()
+        return _upsert, self.dict()
 
     @property
     def __delete(self):
@@ -99,20 +112,16 @@ class CommonModel(BaseModel):
         # TODO: Вариант, что по первичному ключу ничего не нашли, пока не предусмотрен:
         if ret:
             self.__dict__.update(ret)
-        else:
-            print(f'loaf: ничего не нашли')
 
         return self
 
     @db_connector
     def store(self, cur: cursor = None) -> Self:
 
-        cur.execute(*self.__insert)
+        cur.execute(*self.__upsert)
         ret = cur.fetchone()
         if ret:
             self.__dict__.update(ret)
-        else:
-            print(f'store: ничего не нашли')
 
         return self
 

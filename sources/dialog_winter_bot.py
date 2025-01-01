@@ -47,16 +47,16 @@ class DialogWinterBot(ReporterBot):
 
         inline_kb.add(
             InlineKeyboardButton(
-                'Зарегистрироваться' + (' ✅' if role == 'student' else ''),
-                callback_data=register_callback.new('student', 'get_steps')
+                'Зарегистрироваться' + (' ✅' if role == RolesEnum.STUDENT else ''),
+                callback_data=register_callback.new(RolesEnum.STUDENT, 'get_steps')
             ),
+            # InlineKeyboardButton(
+            #     'Зарегистрировать друга' + (' ✅' if role == RolesEnum.FRIEND else ''),
+            #     callback_data=register_callback.new(RolesEnum.FRIEND, 'get_steps')
+            # ),
             InlineKeyboardButton(
-                'Зарегистрировать друга' + (' ✅' if role == 'friend' else ''),
-                callback_data=register_callback.new('friend', 'get_steps')
-            ),
-            InlineKeyboardButton(
-                'Регистрация преподавателя' + (' ✅' if role == 'teacher' else ''),
-                callback_data=register_callback.new('teacher', 'get_steps')
+                'Регистрация преподавателя' + (' ✅' if role == RolesEnum.TEACHER else ''),
+                callback_data=register_callback.new(RolesEnum.TEACHER, 'get_steps')
             ),
         )
 
@@ -73,8 +73,6 @@ class DialogWinterBot(ReporterBot):
     def _callback_register(self, call: CallbackQuery):
         register, role, step = call.data.split(register_callback.sep)
 
-        print(register, role, step)
-
         if 'get_steps' == step:
 
             chat_id = call.message.chat.id
@@ -90,40 +88,18 @@ class DialogWinterBot(ReporterBot):
 
         self.register_step(call.message, role, step)
 
-    def register_step(self, message: Message, role, step: str):
+    def register_step(self, initial_message: Message, role, step: str):
         """
         ВНИМАНИЕ! message.from_user.username / message.from_user.id выдаст «DialogWinterBot» (sic!) и его айдишник
         соответственно — НЕ идентификатор пользователя, ведущего диалог с ботом, т.к. здесь мы редактируем сообщение
         ОТ БОТА! Идентификатор пользователя (при общении с ботом напрямую, не через группу) это message.chat.id.
         """
 
-
-        print(message.chat.last_name, message.chat.first_name)
-
-        register = Register.factory(role, self.bot, message)
+        register = Register.factory(role, self.bot, initial_message)
 
         step_method = getattr(register, step, None)
         if step_method and callable(step_method):
             step_method()
-
-
-        # steps = {
-        #     0: {
-        #         RolesEnum.STUDENT: '<b>Введите ФИО:</b>',
-        #         RolesEnum.FRIEND: '<b>Введите ФИО друга:</b>',
-        #         RolesEnum.TEACHER: '<b>Введите ФИО:</b>',
-        #     }
-        # }
-        #
-        # print(role, step, register)
-        # chat_id = message.chat.id
-        #
-        # self.bot.send_message(
-        #     chat_id=chat_id,
-        #     text=steps[step][role]
-        # )
-        #
-        # self.bot.register_next_step_handler(message, self.register_step, role, 'surname')
 
 
 if __name__ == '__main__':

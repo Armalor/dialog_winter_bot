@@ -3,7 +3,6 @@ drop table if exists students;
 create table students (
     id                  int8 not null,
     friend_idx          int not null,
-    surname             varchar(255) null,
     name                varchar(255) null,
     school              varchar(255) null,
     cls               varchar(255) null,
