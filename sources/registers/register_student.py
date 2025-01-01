@@ -95,9 +95,6 @@ class RegisterStudent(Register):
 
             self.get_steps()
 
-    # def step_name_save(self, message: Message = None):
-    #     student = self.get(id=self.user_id, friend_idx=0)
-
     def step_school(self, message: Message = None, init_message: Message = None):
 
         if init_message is None:
@@ -125,7 +122,19 @@ class RegisterStudent(Register):
         else:
 
             student = self.get(id=self.user_id, friend_idx=0)
+
+            suffixes = {
+                '12': '(лицей «Дубна»)',
+                '13': '(лицей Кадышевского)',
+                '14': '(Юна)',
+                '15': '(другая)',
+            }
+
             student.school = message.text
+
+            if student.school in suffixes:
+                student.school += f' {suffixes.get(student.school)}'
+
             student.store()
 
             self.bot.delete_message(
@@ -190,15 +199,6 @@ class RegisterStudent(Register):
             student_list.append(student)
 
         return student
-
-    # @classmethod
-    # def set(cls, student: StudentModel):
-    #
-    #     student_list = cls.students.setdefault(student.id, [])
-    #     try:
-    #         student_list[student.friend_idx] = student
-    #     except IndexError:
-    #         student_list.append(student)
 
 
 if __name__ == '__main__':
