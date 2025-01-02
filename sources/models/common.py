@@ -103,7 +103,7 @@ class CommonModel(BaseModel):
             raise ValueError(f'Primary key ({", ".join(self.PKEY)}) for table {self.TABLE} is not set in current model')
 
         pkey = map(lambda x: f'{x} = %({x})s', self.PKEY)
-        return f'''select * from {self.TABLE} as t where {' and '.join(pkey)}''', self.dict()
+        return f'''select * from {self.TABLE} as t where {' and '.join(pkey)}''', self.model_dump()
 
     @db_connector
     def load(self, cur: cursor = None) -> Self:
@@ -122,7 +122,7 @@ class CommonModel(BaseModel):
         cur.execute(*self._upsert)
         ret = cur.fetchone()
         if ret:
-            self.__dict__.update(ret)
+            self.__dict__.update(self.model_validate(ret))
 
         return self
 
@@ -131,6 +131,6 @@ class CommonModel(BaseModel):
         cur.execute(*self._delete)
         ret = cur.fetchone()
         if ret:
-            self.__dict__.update(ret)
+            self.__dict__.update(self.model_validate(ret))
 
         return self
