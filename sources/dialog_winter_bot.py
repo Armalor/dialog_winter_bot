@@ -103,15 +103,15 @@ class DialogWinterBot(ReporterBot):
 
     def _start(self, message):
 
-        self.bot.delete_message(
-            chat_id=message.chat.id,
-            message_id=message.id,
-        )
-
         self.bot.send_message(
             message.chat.id,
             text="Регистрация / Профиль",
             reply_markup=self.__get_register_keyboard(initial_message=message)
+        )
+
+        self.bot.delete_message(
+            chat_id=message.chat.id,
+            message_id=message.id,
         )
 
     def _callback_register(self, call: CallbackQuery):

@@ -19,22 +19,22 @@ create type timing_enum as enum (
 create table checkpoints(
     name                varchar(255) null,
     timing              timing_enum not null default 'maximum',
-    students            jsonb null,
+    students            jsonb not null default '[]'::jsonb,
     kids                boolean not null default false,
     total               int null,
     constraint checkpoints_pkey primary key (name)
 );
 
-insert into checkpoints (name) values
-    ('Быки и коровы'),
-    ('Тяжун'),
-    ('Ксерокс'),
-    ('Водосток'),
-    ('Словари'),
-    ('Городки лабиринт'),
-    ('Большие палки'),
-    ('Большой мемори с загадками'),
-    ('Большой Эрудит');
+insert into checkpoints (name, students) values
+    ('Быки и коровы', '[]'::jsonb),
+    ('Тяжун', '[]'::jsonb),
+    ('Ксерокс', '[]'::jsonb),
+    ('Водосток', '[]'::jsonb),
+    ('Словари', '[]'::jsonb),
+    ('Городки лабиринт', '[]'::jsonb),
+    ('Большие палки', '[]'::jsonb),
+    ('Большой мемори с загадками', '[]'::jsonb),
+    ('Большой Эрудит', '[]'::jsonb);
 
 
 drop table if exists teachers;
