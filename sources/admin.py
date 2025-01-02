@@ -81,11 +81,14 @@ class Admin:
             message_id=self.message_id,
         )
 
-    def commit_stage(self, stage):
+    def commit_stage(self, stage, committed=False):
+
         inline_kb = InlineKeyboardMarkup(row_width=1)
 
+        tail_c = ' ✅' if committed else ''
+
         inline_kb.add(
-            InlineKeyboardButton(f'Подтверждаю начало {stage} этапа', callback_data=self.callback.new('start_stage', stage)),
+            InlineKeyboardButton(f'Подтверждаю начало {stage} этапа' + tail_c, callback_data=self.callback.new('start_stage', stage)),
             InlineKeyboardButton(f'⬅', callback_data=self.callback.new('action_list', '0')),
         )
 
@@ -98,6 +101,8 @@ class Admin:
 
     def start_stage(self, stage):
         inline_kb = InlineKeyboardMarkup(row_width=1)
+
+        self.commit_stage(stage, True)
         self.bot.send_message(
             chat_id=self.chat_id,
             text=f"НАЧИНАЕМ {stage} ЭТАП"

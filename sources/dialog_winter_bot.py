@@ -89,7 +89,7 @@ class DialogWinterBot(ReporterBot):
 
             inline_kb.row(
                 InlineKeyboardButton(
-                    'Регистрация преподавателя'+ (' ✅' if reg_tch.finished else ''),
+                    'Регистрация преподавателя' + (' ✅' if reg_tch.finished else ''),
                     callback_data=register_callback.new(RolesEnum.TEACHER, 'get_steps')
                 ),
             )
@@ -102,6 +102,11 @@ class DialogWinterBot(ReporterBot):
         return inline_kb
 
     def _start(self, message):
+
+        self.bot.delete_message(
+            chat_id=message.chat.id,
+            message_id=message.id,
+        )
 
         self.bot.send_message(
             message.chat.id,
@@ -122,7 +127,6 @@ class DialogWinterBot(ReporterBot):
         step_method = getattr(register, step, None)
         if step_method and callable(step_method):
             step_method()
-
 
     def _callback_admin(self, call: CallbackQuery):
 
