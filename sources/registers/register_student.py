@@ -27,6 +27,17 @@ class RegisterStudent(Register):
 
     students: StudentsModel = StudentsModel()
 
+    @property
+    def finished(self) -> bool:
+        student = self.get(id=self.user_id, friend_idx=0)
+
+        return all([
+            student.surname is not None,
+            student.name is not None,
+            student.school is not None,
+            student.cls is not None
+        ])
+
     def get_steps(self):
         inline_kb = InlineKeyboardMarkup(row_width=1)
 
@@ -55,8 +66,8 @@ class RegisterStudent(Register):
         if student.cls:
             cnt += 1
 
-        bra = '<b>' if cnt == 4 else ''
-        ket = ', готово!</b>' if cnt == 4 else ''
+        bra = '<b>' if self.finished else ''
+        ket = ', готово!</b>' if self.finished else ''
 
         self.bot.edit_message_text(
             chat_id=self.chat_id,
@@ -84,7 +95,7 @@ class RegisterStudent(Register):
 
             student = self.get(id=self.user_id, friend_idx=0)
             student.surname = message.text
-            student.store()
+            student.save()
 
             self.bot.delete_message(
                 chat_id=self.chat_id,
@@ -117,7 +128,7 @@ class RegisterStudent(Register):
 
             student = self.get(id=self.user_id, friend_idx=0)
             student.name = message.text
-            student.store()
+            student.save()
 
             self.bot.delete_message(
                 chat_id=self.chat_id,
@@ -171,7 +182,7 @@ class RegisterStudent(Register):
             if student.school in suffixes:
                 student.school += f' {suffixes.get(student.school)}'
 
-            student.store()
+            student.save()
 
             self.bot.delete_message(
                 chat_id=self.chat_id,
@@ -206,7 +217,7 @@ class RegisterStudent(Register):
 
             student = self.get(id=self.user_id, friend_idx=0)
             student.cls = message.text
-            student.store()
+            student.save()
 
             self.bot.delete_message(
                 chat_id=self.chat_id,

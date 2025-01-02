@@ -117,7 +117,7 @@ class CommonModel(BaseModel):
         return self
 
     @db_connector
-    def store(self, cur: cursor = None) -> Self:
+    def save(self, cur: cursor = None) -> Self:
 
         cur.execute(*self._upsert)
         ret = cur.fetchone()

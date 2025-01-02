@@ -69,6 +69,10 @@ class Register(ABC):
     def get_steps(self) -> InlineKeyboardMarkup:
         pass
 
+    @property
+    def finished(self) -> bool:
+        return False
+
     def step_close(self):
         self.bot.delete_message(
             chat_id=self.chat_id,

@@ -60,6 +60,6 @@ if __name__ == '__main__':
     #     'cls': '11a',
     # })
     #
-    # u1.store()
+    # u1.save()
 
 

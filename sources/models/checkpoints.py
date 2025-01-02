@@ -66,5 +66,5 @@ if __name__ == '__main__':
 
     print(model, id(model))
 
-    # model.store()
+    # model.save()
     # pprint(model.model_dump(), width=128)

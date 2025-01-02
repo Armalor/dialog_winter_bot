@@ -47,7 +47,7 @@
             "telegram": {
                 "class": "telegram_handler.TelegramHandler",
                 "token": "Токен лежит в config.local.json",
-                "chat_id": -4715780154,
+                "chat_id": -1001767163823,
                 "formatter":"telegramFormatter",
                 "level":"INFO"
             }

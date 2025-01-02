@@ -7,7 +7,7 @@ from telebot.types import (
     KeyboardButton,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
-    ReplyKeyboardRemove,
+    ChatMemberMember,
     CallbackQuery,
     Message,
 )
@@ -40,8 +40,13 @@ class DialogWinterBot(ReporterBot):
         @self.bot.callback_query_handler(func=lambda c: c.data and c.data.startswith(register_callback.prefix))
         def _(callback_query): self._callback_register(callback_query)
 
-    @staticmethod
-    def __get_register_keyboard(role=None):
+    def is_teacher(self, message):
+        # Здесь запрашиваем участника строго конкретного чата:
+        chat_member = self.bot.get_chat_member(user_id=message.from_user.id, chat_id=self.chat_id)
+
+        return isinstance(chat_member, ChatMemberMember)
+
+    def __get_register_keyboard(self, role=None, initial_message=None):
 
         inline_kb = InlineKeyboardMarkup(row_width=1)
 
@@ -54,11 +59,15 @@ class DialogWinterBot(ReporterBot):
             #     'Зарегистрировать друга' + (' ✅' if role == RolesEnum.FRIEND else ''),
             #     callback_data=register_callback.new(RolesEnum.FRIEND, 'get_steps')
             # ),
-            InlineKeyboardButton(
-                'Регистрация преподавателя' + (' ✅' if role == RolesEnum.TEACHER else ''),
-                callback_data=register_callback.new(RolesEnum.TEACHER, 'get_steps')
-            ),
         )
+
+        if initial_message and self.is_teacher(initial_message):
+            inline_kb.add(
+                InlineKeyboardButton(
+                    'Регистрация преподавателя' + (' ✅' if role == RolesEnum.TEACHER else ''),
+                    callback_data=register_callback.new(RolesEnum.TEACHER, 'get_steps')
+                ),
+            )
 
         return inline_kb
 
@@ -67,7 +76,7 @@ class DialogWinterBot(ReporterBot):
         self.bot.send_message(
             message.chat.id,
             text="Регистрация / Профиль",
-            reply_markup=self.__get_register_keyboard()
+            reply_markup=self.__get_register_keyboard(initial_message=message)
         )
 
     def _callback_register(self, call: CallbackQuery):
@@ -83,7 +92,7 @@ class DialogWinterBot(ReporterBot):
                 chat_id=chat_id,
                 message_id=message_id,
                 text=text,
-                reply_markup=self.__get_register_keyboard(role=role)
+                reply_markup=self.__get_register_keyboard(role=role, initial_message=call.message)
             )
 
         self.register_step(call.message, role, step)
@@ -117,7 +126,7 @@ if __name__ == '__main__':
                 msg = f'Start polling {reporter.__class__.__name__}'
             else:
                 msg = f'Restart polling {reporter.__class__.__name__}, attempt {attempt}'
-            logger.info(msg)
+            logger.debug(msg)
 
             reporter.bot.polling(non_stop=False)
         except (ReadTimeout, ReadTimeoutError, ConnectionError, ProtocolError, ConnectionResetError) as error:
