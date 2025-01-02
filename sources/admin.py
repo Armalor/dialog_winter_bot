@@ -76,7 +76,7 @@ class Admin:
             inline_kb.add(
                 InlineKeyboardButton(
                     f'Отправить сигнал «минута до конца {self.CURRENT_STAGE} этапа»',
-                    callback_data=self.callback.new('signal_minute', '1')
+                    callback_data=self.callback.new('sigterm', '1')
                 )
             )
 
@@ -246,16 +246,17 @@ class Admin:
                         self.bot.send_message(
                             chat_id=t.id,
                             text=f"Препод, {t.name}, вминание! Начался этап #{Admin.CURRENT_STAGE}, "
-                                 f"к тебе {prefix} мчит команда {team}"
+                                 f"к тебе — КП {c.name} — {prefix} мчит команда {team}"
                         )
 
                     if t.kids and c.kids:
                         self.bot.send_message(
                             chat_id=t.id,
-                            text=f"Препод по мелким, вминание! Начался этап #{Admin.CURRENT_STAGE}, "
-                                 f"собирай своих подопечных и стаей кабанчиков с ними на КП {c.name}"
+                            text=f"Препод {t.name} (по мелким), вминание! Начался этап #{Admin.CURRENT_STAGE}, "
+                                 f"собирай своих подопечных и стаей кабанчиков с ними на КП <b>{c.name}</b>"
                         )
 
         # print(students, checkpoints)
 
-
+    def sigterm(self, stage):
+        ...
