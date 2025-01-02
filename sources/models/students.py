@@ -8,7 +8,6 @@ __root__ = Path(__file__).resolve().parent.parent
 sys.path.append(__root__.__str__())
 from config import Config
 from models.common import CommonModel
-from connector import DBConnector
 # ~Локальный импорт
 
 
@@ -23,7 +22,8 @@ class StudentModel(CommonModel):
         default=0,
         description="По сути это индекс в списке StudentsModel[id], где 0 — регистрация слушателя, больше 0 — друзей"
     )
-    name: Optional[str] = Field(default=None, description="ФИО целиком")
+    surname: Optional[str] = Field(default=None)
+    name: Optional[str] = Field(default=None)
     school: Optional[str] = Field(default=None)
     cls: Optional[str] = Field(default=None)
     checkpoints: list[str] = Field(default_factory=list)
@@ -41,7 +41,8 @@ if __name__ == '__main__':
     u1 = StudentModel(
         id=1,
         friend_idx=0,
-        # name='Афанасьев Александр',
+        # surname='Афанасьев',
+        # name='Александр',
         # school='7',
         # cls='11',
     )
@@ -53,7 +54,8 @@ if __name__ == '__main__':
     print(u1)
 
     # u1.__dict__.update({
-    #     'name': 'Афанасьев Александр',
+    #     'surname': 'Афанасьев',
+    #     'name': 'Александр',
     #     'school': '7',
     #     'cls': '11a',
     # })

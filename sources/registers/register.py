@@ -68,3 +68,9 @@ class Register(ABC):
     @abstractmethod
     def get_steps(self) -> InlineKeyboardMarkup:
         pass
+
+    def step_close(self):
+        self.bot.delete_message(
+            chat_id=self.chat_id,
+            message_id=self.message_id,
+        )

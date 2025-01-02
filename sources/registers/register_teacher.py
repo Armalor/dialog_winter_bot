@@ -28,9 +28,20 @@ class RegisterTeacher(Register):
     def get_steps(self):
         inline_kb = InlineKeyboardMarkup(row_width=1)
 
+        student = self.get(id=self.user_id, friend_idx=0)
+
+        tail_sn = student.surname or '❓'
+        tail_n = student.name or '❓'
+
         inline_kb.add(
-            InlineKeyboardButton('Чекпоинт:', callback_data=self.register_callback.new(self.role, 'step_checkpoint')),
+            InlineKeyboardButton('Контрольный пункт:', callback_data=self.register_callback.new(self.role, 'step_checkpoint')),
             InlineKeyboardButton('Тайминг:', callback_data=self.register_callback.new(self.role, 'step_timing')),
+            InlineKeyboardButton(f'❌', callback_data=self.register_callback.new(self.role, 'step_close')),
         )
 
-        return inline_kb
+        self.bot.edit_message_text(
+            chat_id=self.chat_id,
+            message_id=self.message_id,
+            text=f'{self.title}',
+            reply_markup=inline_kb
+        )

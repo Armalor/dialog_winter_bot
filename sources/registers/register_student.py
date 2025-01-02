@@ -32,17 +32,22 @@ class RegisterStudent(Register):
 
         student = self.get(id=self.user_id, friend_idx=0)
 
+        tail_sn = student.surname or '❓'
         tail_n = student.name or '❓'
         tail_s = student.school or '❓'
         tail_c = student.cls or '❓'
 
         inline_kb.add(
-            InlineKeyboardButton(f'ФИО: {tail_n}', callback_data=self.register_callback.new(self.role, 'step_name')),
+            InlineKeyboardButton(f'Фамилия: {tail_sn}', callback_data=self.register_callback.new(self.role, 'step_surname')),
+            InlineKeyboardButton(f'Имя: {tail_n}', callback_data=self.register_callback.new(self.role, 'step_name')),
             InlineKeyboardButton(f'Школа: {tail_s}', callback_data=self.register_callback.new(self.role, 'step_school')),
             InlineKeyboardButton(f'Класс: {tail_c}', callback_data=self.register_callback.new(self.role, 'step_class')),
+            InlineKeyboardButton(f'❌', callback_data=self.register_callback.new(self.role, 'step_close')),
         )
 
         cnt = 0
+        if student.surname:
+            cnt += 1
         if student.name:
             cnt += 1
         if student.school:
@@ -50,17 +55,48 @@ class RegisterStudent(Register):
         if student.cls:
             cnt += 1
 
-        bra = '<b>' if cnt == 3 else ''
-        ket = ', готово!</b>' if cnt == 3 else ''
+        bra = '<b>' if cnt == 4 else ''
+        ket = ', готово!</b>' if cnt == 4 else ''
 
         self.bot.edit_message_text(
             chat_id=self.chat_id,
             message_id=self.message_id,
-            text=f'{self.title}: {bra}{cnt} из 3{ket}',
+            text=f'{self.title}: {bra}{cnt} из 4{ket}',
             reply_markup=inline_kb
         )
 
-        return inline_kb
+    def step_surname(self, message: Message = None, init_message: Message = None):
+        """
+        message — это то, что написал пользователь в ответ на запрос фамилии.
+        init_message — это сам запрос фамилии, его тоже удаляем.
+        """
+
+        if init_message is None:
+
+            init_message = self.bot.send_message(
+                chat_id=self.chat_id,
+                text="Введите свою <b>фамилию</b>:"
+            )
+
+            self.bot.register_next_step_handler(init_message, self.step_surname, init_message)
+
+        else:
+
+            student = self.get(id=self.user_id, friend_idx=0)
+            student.surname = message.text
+            student.store()
+
+            self.bot.delete_message(
+                chat_id=self.chat_id,
+                message_id=message.id,
+            )
+
+            self.bot.delete_message(
+                chat_id=self.chat_id,
+                message_id=init_message.id,
+            )
+
+            self.get_steps()
 
     def step_name(self, message: Message = None, init_message: Message = None):
         """
@@ -72,7 +108,7 @@ class RegisterStudent(Register):
 
             init_message = self.bot.send_message(
                 chat_id=self.chat_id,
-                text="Введите свою <b>фамилию</b> и <b>имя</b>:"
+                text="Введите свое <b>имя</b>:"
             )
 
             self.bot.register_next_step_handler(init_message, self.step_name, init_message)

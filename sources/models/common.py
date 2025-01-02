@@ -41,7 +41,7 @@ class CommonModel(BaseModel):
         return json.loads(self.json(exclude=exclude))
 
     @property
-    def __upsert(self):
+    def _upsert(self):
         """
         Upsert (insert → on conflict) для сохранения в БД.
         Какие могут быть ситуации:
@@ -70,17 +70,17 @@ class CommonModel(BaseModel):
         cols = self.dict(exclude=exclude).keys()
         placeholders = map(lambda x: f'%({x})s', cols)
 
-        _upsert = f'''
+        _UPSERT = f'''
             insert into {self.TABLE} ({', '.join(cols)}) values ({', '.join(placeholders)})
             on conflict {on_conflict} 
             
             returning {self.TABLE}.*
         '''
 
-        return _upsert, self.dict()
+        return _UPSERT, self.model_dump()
 
     @property
-    def __delete(self):
+    def _delete(self):
 
         pkey = map(lambda x: f'{x} = %({x})s', self.PKEY)
 
@@ -91,7 +91,7 @@ class CommonModel(BaseModel):
             returning {self.TABLE}.*
         '''
 
-        return _delete, self.dict()
+        return _delete, self.model_dump()
 
     @property
     def __find_by_pkey(self) -> tuple:
@@ -109,16 +109,17 @@ class CommonModel(BaseModel):
     def load(self, cur: cursor = None) -> Self:
         cur.execute(*self.__find_by_pkey)
         ret = cur.fetchone()
-        # TODO: Вариант, что по первичному ключу ничего не нашли, пока не предусмотрен:
         if ret:
-            self.__dict__.update(ret)
+            # self.model_validate — по сути тут мы создаем отдельную новую модель и из нее обновляем текущую.
+            # Сделано для того, чтобы уметь принимать из базы сложные типы, например, jsonb
+            self.__dict__.update(self.model_validate(ret))
 
         return self
 
     @db_connector
     def store(self, cur: cursor = None) -> Self:
 
-        cur.execute(*self.__upsert)
+        cur.execute(*self._upsert)
         ret = cur.fetchone()
         if ret:
             self.__dict__.update(ret)
@@ -127,9 +128,9 @@ class CommonModel(BaseModel):
 
     @db_connector
     def delete(self, cur: cursor = None) -> Self:
-        cur.execute(*self.__delete)
+        cur.execute(*self._delete)
         ret = cur.fetchone()
-        # TODO: Вариант, что по первичному ключу ничего не нашли, пока не предусмотрен:
-        self.__dict__.update(ret)
+        if ret:
+            self.__dict__.update(ret)
 
         return self
