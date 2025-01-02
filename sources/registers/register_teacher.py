@@ -26,6 +26,9 @@ class RegisterTeacher(Register):
     role: Optional[RolesEnum] = RolesEnum.TEACHER
     title = 'Профиль препода'
 
+    TEACHER_KIDS = 'Сопровождаю мелких детей'
+    DELETE_CHECKPOINT = 'Нет КП (удалить)'
+
     teachers: dict[int, TeacherModel] = dict()
 
     def get_steps(self):
@@ -36,11 +39,14 @@ class RegisterTeacher(Register):
         tail_n = teacher.name or '❓'
         tail_c = teacher.checkpoint or '❓'
 
+        if teacher.kids:
+            tail_c = self.TEACHER_KIDS
+
         inline_kb.add(
             InlineKeyboardButton(f'Имя: {tail_n}', callback_data=self.register_callback.new(self.role, 'step_name')),
             InlineKeyboardButton(f'Контрольный пункт: {tail_c}', callback_data=self.register_callback.new(self.role, 'step_checkpoint')),
             # InlineKeyboardButton('Тайминг:', callback_data=self.register_callback.new(self.role, 'step_timing')),
-            InlineKeyboardButton(f'❌', callback_data=self.register_callback.new(self.role, 'step_close')),
+            InlineKeyboardButton(f'❎', callback_data=self.register_callback.new(self.role, 'step_close')),
         )
 
         self.bot.edit_message_text(
@@ -89,7 +95,8 @@ class RegisterTeacher(Register):
 
             replay_kb = ReplyKeyboardMarkup(one_time_keyboard=True)
 
-            replay_kb.row('Нет КП (удалить)')
+            replay_kb.row(self.DELETE_CHECKPOINT)
+            replay_kb.row(self.TEACHER_KIDS)
 
             with DBConnector() as cursor:
                 cursor.execute('select * from checkpoints')
@@ -108,10 +115,15 @@ class RegisterTeacher(Register):
 
             teacher = self.get(id=self.user_id)
 
-            if 'Нет КП (удалить)' == message.text:
+            if self.DELETE_CHECKPOINT == message.text:
                 teacher.checkpoint = None
+                teacher.kids = False
+            elif self.TEACHER_KIDS == message.text:
+                teacher.checkpoint = None
+                teacher.kids = True
             else:
                 teacher.checkpoint = message.text
+                teacher.kids = False
 
             teacher.save()
 

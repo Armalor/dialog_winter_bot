@@ -53,7 +53,7 @@ class RegisterStudent(Register):
             InlineKeyboardButton(f'Имя: {tail_n}', callback_data=self.register_callback.new(self.role, 'step_name')),
             InlineKeyboardButton(f'Школа: {tail_s}', callback_data=self.register_callback.new(self.role, 'step_school')),
             InlineKeyboardButton(f'Класс: {tail_c}', callback_data=self.register_callback.new(self.role, 'step_class')),
-            InlineKeyboardButton(f'❌', callback_data=self.register_callback.new(self.role, 'step_close')),
+            InlineKeyboardButton(f'❎', callback_data=self.register_callback.new(self.role, 'step_close')),
         )
 
         cnt = 0

@@ -21,6 +21,7 @@ class TeacherModel(CommonModel):
 
     name: Optional[str] = Field(default=None)
     checkpoint: Optional[str] = Field(default=None)
+    kids: bool = Field(default=False)
 
 
 if __name__ == '__main__':

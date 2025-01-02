@@ -43,6 +43,7 @@ create table teachers (
     id                  int8 not null,
     name                varchar(255) null,
     checkpoint          varchar(255) null,
+    kids                bool not null default false,
     constraint teachers_pkey primary key (id),
     constraint teachers_checkpoints_fkey foreign key (checkpoint)
         references checkpoints (name) on delete set null on update cascade
