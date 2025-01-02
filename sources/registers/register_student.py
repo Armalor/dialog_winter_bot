@@ -1,3 +1,4 @@
+from psycopg2.extensions import cursor
 from typing import Optional
 from telebot.types import (
     ReplyKeyboardMarkup,
@@ -8,6 +9,7 @@ from telebot.types import (
     CallbackQuery,
     Message,
 )
+from pprint import pprint
 
 # Локальный импорт:
 import sys
@@ -16,6 +18,7 @@ __root__ = Path(__file__).resolve().parent.parent
 sys.path.append(__root__.__str__())
 from models import RolesEnum, StudentModel, StudentsModel
 from registers.register import Register
+from connector import DBConnector
 # ~Локальный импорт
 
 
@@ -53,7 +56,7 @@ class RegisterStudent(Register):
             InlineKeyboardButton(f'Имя: {tail_n}', callback_data=self.register_callback.new(self.role, 'step_name')),
             InlineKeyboardButton(f'Школа: {tail_s}', callback_data=self.register_callback.new(self.role, 'step_school')),
             InlineKeyboardButton(f'Класс: {tail_c}', callback_data=self.register_callback.new(self.role, 'step_class')),
-            InlineKeyboardButton(f'❎', callback_data=self.register_callback.new(self.role, 'step_close')),
+            InlineKeyboardButton(f'⬅', callback_data=self.register_callback.new(self.role, 'step_close')),
         )
 
         cnt = 0
@@ -66,13 +69,12 @@ class RegisterStudent(Register):
         if student.cls:
             cnt += 1
 
-        bra = '<b>' if self.finished else ''
-        ket = '; РЕГИСТРАЦИЯ ЗАВЕРШЕНА, СПАСИБО!</b>' if self.finished else ''
+        finished = '\n<b>РЕГИСТРАЦИЯ ЗАВЕРШЕНА, СПАСИБО!</b>' if self.finished else ''
 
         self.bot.edit_message_text(
             chat_id=self.chat_id,
             message_id=self.message_id,
-            text=f'{self.title}: {bra}{cnt} из 4{ket}',
+            text=f'{self.title}: {cnt} из 4. {finished}',
             reply_markup=inline_kb
         )
 
@@ -233,16 +235,21 @@ class RegisterStudent(Register):
 
     @classmethod
     def load(cls) -> StudentsModel:
+        with DBConnector() as cur:
+            cur.execute('select * from students')
+            for std in cur.fetchall():
+                _ = cls.get(id=std['id'], friend_idx=std['friend_idx'], cur=cur)
+
         return cls.students
 
     @classmethod
-    def get(cls, id: int, friend_idx: int = 0) -> StudentModel:
+    def get(cls, id: int, friend_idx: int = 0, cur: cursor = None) -> StudentModel:
         student_list = cls.students.setdefault(id, [])
 
         try:
-            student = student_list[friend_idx].load()
+            student = student_list[friend_idx].load(cur=cur)
         except IndexError:
-            student = StudentModel(id=id, friend_idx=friend_idx).load()
+            student = StudentModel(id=id, friend_idx=friend_idx).load(cur=cur)
             student_list.append(student)
 
         return student
@@ -253,4 +260,4 @@ if __name__ == '__main__':
 
     students = r.load()
 
-    print(students)
+    pprint(students)

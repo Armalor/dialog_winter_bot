@@ -6,7 +6,6 @@ try:
 except ImportError:
     from typing import Self
 
-from enum import IntEnum, Enum
 from psycopg2.extensions import cursor
 from pprint import pprint
 

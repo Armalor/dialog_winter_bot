@@ -2,12 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Type
 from telebot import TeleBot
 from telebot.types import (
-    ReplyKeyboardMarkup,
-    KeyboardButton,
     InlineKeyboardMarkup,
-    InlineKeyboardButton,
-    ReplyKeyboardRemove,
-    CallbackQuery,
     Message,
 )
 from telebot_calendar import CallbackData

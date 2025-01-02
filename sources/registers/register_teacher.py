@@ -31,6 +31,15 @@ class RegisterTeacher(Register):
 
     teachers: dict[int, TeacherModel] = dict()
 
+    @property
+    def finished(self) -> bool:
+        teacher = self.get(id=self.user_id)
+
+        return all([
+            teacher.name is not None,
+            teacher.checkpoint is not None or teacher.kids,
+        ])
+
     def get_steps(self):
         inline_kb = InlineKeyboardMarkup(row_width=1)
 
@@ -46,7 +55,7 @@ class RegisterTeacher(Register):
             InlineKeyboardButton(f'Имя: {tail_n}', callback_data=self.register_callback.new(self.role, 'step_name')),
             InlineKeyboardButton(f'Контрольный пункт: {tail_c}', callback_data=self.register_callback.new(self.role, 'step_checkpoint')),
             # InlineKeyboardButton('Тайминг:', callback_data=self.register_callback.new(self.role, 'step_timing')),
-            InlineKeyboardButton(f'❎', callback_data=self.register_callback.new(self.role, 'step_close')),
+            InlineKeyboardButton(f'⬅', callback_data=self.register_callback.new(self.role, 'step_close')),
         )
 
         self.bot.edit_message_text(
