@@ -67,7 +67,7 @@ class RegisterStudent(Register):
             cnt += 1
 
         bra = '<b>' if self.finished else ''
-        ket = ', готово!</b>' if self.finished else ''
+        ket = '; РЕГИСТРАЦИЯ ЗАВЕРШЕНА, СПАСИБО!</b>' if self.finished else ''
 
         self.bot.edit_message_text(
             chat_id=self.chat_id,
