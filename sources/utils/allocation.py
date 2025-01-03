@@ -128,7 +128,7 @@ def get_students_from_db() -> list[StudentModel]:
 def get_checkpoints_from_db() -> list[CheckpointModel]:
     checkpoints = []
     with DBConnector() as cur:
-        cur.execute('select * from checkpoints')
+        cur.execute('select * from checkpoints order by name')
         for ch in cur.fetchall():
             checkpoints.append(CheckpointModel.model_validate(ch))
 

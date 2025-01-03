@@ -75,7 +75,7 @@ class Admin:
 
             inline_kb.add(
                 InlineKeyboardButton(
-                    f'Отправить сигнал «минута до конца {self.CURRENT_STAGE} этапа»',
+                    f'Отправить sigterm «минута до конца {self.CURRENT_STAGE} этапа»',
                     callback_data=self.callback.new('sigterm', '1')
                 )
             )
@@ -259,4 +259,19 @@ class Admin:
         # print(students, checkpoints)
 
     def sigterm(self, stage):
-        ...
+
+        with DBConnector() as cur:
+
+            cur.execute('select * from teachers')
+            for t in cur.fetchall():
+                teacher = TeacherModel.model_validate(t)
+                self.bot.send_message(
+                    chat_id=teacher.id,
+                    text=f"Препод, {teacher.name}, осталась МИНУТА до конца этапа #{Admin.CURRENT_STAGE}! "
+                         f"\nЗаворачивай потихоньку ласты текущей команде и не забудь поставить оценку."
+                )
+
+        self.bot.send_message(
+            chat_id=self.chat_id,
+            text=f"Sigterm по этапу  #{Admin.CURRENT_STAGE} отправлен"
+        )

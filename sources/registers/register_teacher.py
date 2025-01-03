@@ -108,7 +108,7 @@ class RegisterTeacher(Register):
             replay_kb.row(self.TEACHER_KIDS)
 
             with DBConnector() as cursor:
-                cursor.execute('select * from checkpoints')
+                cursor.execute('select * from checkpoints order by name')
 
                 for checkpoint in cursor.fetchall():
                     replay_kb.row(checkpoint['name'])
