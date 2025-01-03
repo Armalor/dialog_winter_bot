@@ -22,7 +22,7 @@ from bots.reporter import ReporterBot
 from connector import DBConnector
 from utils.allocation import allocation_step, get_checkpoints_from_db, get_students_from_db
 from registers import RegisterStudent
-from models import TeacherModel
+from models import TeacherModel, RateModel, StudentModel
 # ~Локальный импорт
 
 
@@ -243,6 +243,7 @@ class Admin:
                 for t in teachers:
                     if t.checkpoint == c.name:
                         prefix = random.choice(prefixes)
+
                         self.bot.send_message(
                             chat_id=t.id,
                             text=f"Препод, {t.name}, вминание! Начался этап #{Admin.CURRENT_STAGE}, "
@@ -260,18 +261,104 @@ class Admin:
 
     def sigterm(self, stage):
 
+        checkpoints = get_checkpoints_from_db()
+
         with DBConnector() as cur:
 
             cur.execute('select * from teachers')
             for t in cur.fetchall():
-                teacher = TeacherModel.model_validate(t)
+                teacher: TeacherModel = TeacherModel.model_validate(t)
+
+                if teacher.kids:
+                    inline_kb = None
+                    suffix = 'своим мелким'
+                else:
+                    inline_kb = InlineKeyboardMarkup(row_width=1)
+                    inline_kb.add(
+                        InlineKeyboardButton(
+                            f'Оценить команду на {Admin.CURRENT_STAGE} этапе',
+                            callback_data=self.callback.new('rate_team', str(Admin.CURRENT_STAGE))
+                        )
+                    )
+                    suffix = 'текущей команде и не забудь поставить оценку'
+
                 self.bot.send_message(
                     chat_id=teacher.id,
                     text=f"Препод, {teacher.name}, осталась МИНУТА до конца этапа #{Admin.CURRENT_STAGE}! "
-                         f"\nЗаворачивай потихоньку ласты текущей команде и не забудь поставить оценку."
+                         f"\nЗаворачивай потихоньку ласты {suffix}.",
+                    reply_markup=inline_kb
                 )
 
         self.bot.send_message(
             chat_id=self.chat_id,
             text=f"Sigterm по этапу  #{Admin.CURRENT_STAGE} отправлен"
         )
+
+    def rate_team(self, stage):
+
+        tick = int(stage) - 1
+
+        checkpoints = get_checkpoints_from_db()
+        teacher = None
+
+        with DBConnector() as cur:
+
+            cur.execute('select * from teachers')
+
+            for t in cur.fetchall():
+                if t['id'] == self.user_id:
+                    teacher: TeacherModel = TeacherModel.model_validate(t)
+                    break
+
+        if not teacher:
+            self.bot.send_message(
+                chat_id=self.user_id,
+                text=f"Не могу найти вашу регистрацию препода",
+            )
+            return
+
+        checkpoint = None
+        if teacher:
+            for ch in checkpoints:
+                if ch.name == teacher.checkpoint:
+                    checkpoint = ch
+
+        if not checkpoint:
+            self.bot.send_message(
+                chat_id=self.user_id,
+                text=f"Не могу найти закрепленный за вами КП",
+            )
+            return
+
+        replay_kb = ReplyKeyboardMarkup(one_time_keyboard=True)
+        replay_kb.row('1', '2', '3')
+        replay_kb.row('4', '5', '6')
+        replay_kb.row('7', '8', '9')
+        replay_kb.row('10')
+        message = self.bot.send_message(
+            chat_id=self.user_id,
+            text=f"Поставьте оценку от 1 до 10 по этапу #{stage}, где\n"
+                 f"1 — натурально ведро раков,\n"
+                 f"10 — стая ящеров-тащеров",
+            reply_markup=replay_kb
+        )
+
+        students = checkpoint.students[tick]
+
+        self.bot.register_next_step_handler(message, self.save_rate, checkpoint.name, students)
+
+    def save_rate(self, message: Message = None, checkpoint: str = None, students: list[StudentModel] = None):
+        if not message.text.isnumeric():
+            return
+
+        rate = int(message.text)
+
+        with DBConnector() as cur:
+            for s in students:
+                _ = RateModel(
+                    id=s.id,
+                    friend_idx=s.friend_idx,
+                    checkpoint=checkpoint,
+                    rate=rate
+                ).save(cur=cur)
+                # print(_)

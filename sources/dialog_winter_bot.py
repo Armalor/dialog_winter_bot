@@ -130,10 +130,11 @@ class DialogWinterBot(ReporterBot):
 
     def _callback_admin(self, call: CallbackQuery):
 
-        if not self.is_admin(call.message):
-            return
-
         _, action, modifier = call.data.split(admin_callback.sep)
+
+        # TODO: ПЕРЕДЕЛАТЬ ЭТОТ ПИЗДЕЦ, ПЕРЕНЕСТИ rate_team в ПРЕПОДА!!!
+        if not self.is_admin(call.message) and action != 'rate_team':
+            return
 
         admin = Admin(self.bot, call.message)
 

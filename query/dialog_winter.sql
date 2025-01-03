@@ -1,4 +1,4 @@
-drop table if exists students;
+drop table if exists students cascade;
 create table students (
     id                  int8 not null,
     friend_idx          int not null,
@@ -47,4 +47,17 @@ create table teachers (
     constraint teachers_pkey primary key (id),
     constraint teachers_checkpoints_fkey foreign key (checkpoint)
         references checkpoints (name) on delete set null on update cascade
+);
+
+drop table if exists rates;
+create table rates (
+    id                  int8 not null,
+    friend_idx          int not null,
+    checkpoint          varchar(255) null,
+    rate                int not null,
+    constraint rates_pkey primary key (id, friend_idx, checkpoint),
+    constraint rates_students_fkey foreign key (id, friend_idx)
+        references students (id, friend_idx) on delete cascade on update cascade,
+    constraint rates_checkpoints_fkey foreign key (checkpoint)
+        references checkpoints (name) on delete cascade on update cascade
 );
