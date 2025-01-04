@@ -73,16 +73,20 @@ class DialogWinterBot(ReporterBot):
 
         reg_std = Register.factory(RolesEnum.STUDENT, self.bot, initial_message)
 
-        inline_kb.row(
-            InlineKeyboardButton(
-                'Зарегистрироваться' + (' ✅' if reg_std.finished else ''),
-                callback_data=register_callback.new(RolesEnum.STUDENT, 'get_steps')
-            ),
-            # InlineKeyboardButton(
-            #     'Зарегистрировать друга' ,
-            #     callback_data=register_callback.new(RolesEnum.FRIEND, 'get_steps')
-            # ),
-        )
+        admin = Admin(self.bot, initial_message)
+
+        if admin.CURRENT_STAGE == 0:
+
+            inline_kb.row(
+                InlineKeyboardButton(
+                    'Зарегистрироваться' + (' ✅' if reg_std.finished else ''),
+                    callback_data=register_callback.new(RolesEnum.STUDENT, 'get_steps')
+                ),
+                # InlineKeyboardButton(
+                #     'Зарегистрировать друга' ,
+                #     callback_data=register_callback.new(RolesEnum.FRIEND, 'get_steps')
+                # ),
+            )
 
         if initial_message and self.is_teacher(initial_message):
             reg_tch = Register.factory(RolesEnum.TEACHER, self.bot, initial_message)
