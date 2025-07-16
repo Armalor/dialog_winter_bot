@@ -19,7 +19,7 @@ class DekulakizationException(Exception):
     pass
 
 
-def allocation_step(students: list[StudentModel], checkpoints: list[CheckpointModel], kids_point_idx: int = 0) -> tuple[list[StudentModel], list[CheckpointModel]]:
+def allocation_step(students: list[StudentModel], checkpoints: list[CheckpointModel], tick: int = 0) -> tuple[list[StudentModel], list[CheckpointModel]]:
 
     random.shuffle(students)
     students_len = len(students)
@@ -29,22 +29,21 @@ def allocation_step(students: list[StudentModel], checkpoints: list[CheckpointMo
 
     for idx, checkpoint in enumerate(checkpoints):
         checkpoint.students.append([])
-        checkpoint.kids = idx == kids_point_idx
 
-    checkpoint_idx = kids_point_idx
+    checkpoint_idx = tick
 
     # Нулевой шаг аллокации:
     # Если это предпоследний тик, то КП, который на последнем тике пустует, обязан добрать слушателей
     # до предела. Иначе, на последнем тике аллокацию вообще не удастся завершить: останутся несколько студентов,
     # которые были на всех КП, кроме последнего — не участвующего сейчас в аллокации.
-    if checkpoints[-2].kids:
-        checkpoint = checkpoints[-1]
-        print(f'ЭТО ПРЕДПОСЛЕДНИЙ ТИК! Последний КП — {checkpoint.name} — должен собрать ВСЕХ своих слушателей!')
-        for student in students:
-            if checkpoint.name not in student.checkpoints and student not in allocated_students:
-                student.checkpoints.append(checkpoint.name)
-                allocated_students.append(student)
-                checkpoint.students[-1].append(student)
+    # if checkpoints[-2].kids:
+    #     checkpoint = checkpoints[-1]
+    #     print(f'ЭТО ПРЕДПОСЛЕДНИЙ ТИК! Последний КП — {checkpoint.name} — должен собрать ВСЕХ своих слушателей!')
+    #     for student in students:
+    #         if checkpoint.name not in student.checkpoints and student not in allocated_students:
+    #             student.checkpoints.append(checkpoint.name)
+    #             allocated_students.append(student)
+    #             checkpoint.students[-1].append(student)
 
     # Первый шаг аллокации: КП по очереди выбирают студентов. Проблема: в «остатоке» может быть ситуация, когда
     # студенты, подходяшие для «бедного» КП, уже разобраны «богатыми»...
@@ -52,10 +51,6 @@ def allocation_step(students: list[StudentModel], checkpoints: list[CheckpointMo
         checkpoint_idx = (checkpoint_idx + 1) % checkpoints_len
 
         checkpoint = checkpoints[checkpoint_idx]
-
-        # На этом КП сейчас мелкие дети, он никого не выбирает:
-        if checkpoint.kids:
-            continue
 
         for student in students:
             if checkpoint.name not in student.checkpoints and student not in allocated_students:
@@ -69,8 +64,6 @@ def allocation_step(students: list[StudentModel], checkpoints: list[CheckpointMo
     poor = []
     rich = []
     for checkpoint in checkpoints:
-        if checkpoint.kids:
-            continue
 
         if len(checkpoint.students[-1]) < students_minimum:
             poor.append(checkpoint)
@@ -88,11 +81,6 @@ def allocation_step(students: list[StudentModel], checkpoints: list[CheckpointMo
         for r in rich:
             print(f'БОГАТЫЙ КП: {r.name} ({r.total}){len(r.students[-1])}')
             ...
-
-    # ВНИМАНИЕ! НЕ МОЖЕМ раскулачивать последний КП на предпоследнем тике!!!
-    if checkpoints[-2].kids and checkpoints[-1] in rich:
-        print(f'НЕ МОЖЕМ раскулачить последний кп — {checkpoints[-1].name} — на предпоследнем тике!')
-        rich.remove(checkpoints[-1])
 
     for p in poor:
         try:
@@ -125,10 +113,13 @@ def get_students_from_db() -> list[StudentModel]:
     return students
 
 
-def get_checkpoints_from_db() -> list[CheckpointModel]:
+def get_checkpoints_from_db(phase: int = 1) -> list[CheckpointModel]:
     checkpoints = []
     with DBConnector() as cur:
-        cur.execute('select * from checkpoints order by name')
+        if phase == 1:
+            cur.execute('select * from checkpoints order by name')
+        else:
+            cur.execute('select * from checkpoints2 order by name')
         for ch in cur.fetchall():
             checkpoints.append(CheckpointModel.model_validate(ch))
 
@@ -138,6 +129,7 @@ def get_checkpoints_from_db() -> list[CheckpointModel]:
 if __name__ == '__main__':
 
     def get_checkpoints():
+        """DEPRECATED!"""
         checkpoints = []
         for idx, name in enumerate(checkpoints_list, start=1):
             ch = CheckpointModel(name=name)
@@ -145,6 +137,7 @@ if __name__ == '__main__':
         return checkpoints
 
     def get_students():
+        """DEPRECATED!"""
         students = []
         for idx, student in enumerate(students_list, start=1):
             name, surname = student.split(' ')
@@ -160,32 +153,38 @@ if __name__ == '__main__':
 
     # students = get_students()
     # pprint(students)
-    students = get_students_from_db()
-    pprint(students)
-
     # checkpoints = get_checkpoints()
-    checkpoints = get_checkpoints_from_db()
 
-    ch_names = list(map(lambda x: x.name, checkpoints))
-    print(len(ch_names), ch_names)
-
-    for tick in range(9):
-
+    for phase in [1, 2]:
         print(f'')
         print(f'')
-        print(f'############ TICK {tick+1}')
+        print(f'**************************************************** ФАЗА {phase} ****************************************************')
 
-        students, checkpoints = allocation_step(students, checkpoints, tick)
-
+        # students = get_students_from_db()
+        students = get_students()
         # pprint(students)
+        checkpoints = get_checkpoints_from_db(phase=phase)
 
-        total = 0
-        for ch in checkpoints:
-            print('')
-            print(f'{ch.name}: {ch.total}', 'ТУТ ДЕТИ!' if ch.kids else '')
-            tick_students = ch.students[-1]
-            surnames = list(map(lambda x: x.surname, tick_students))
-            print(surnames, len(surnames))
+        ch_names = list(map(lambda x: x.name, checkpoints))
+        print(len(ch_names), ch_names)
 
-            total += ch.total
-        print(f'total: {total / (tick + 1)}')
+        for tick in range(len(checkpoints)):
+
+            print(f'')
+            print(f'')
+            print(f'############ TICK {tick+1}')
+
+            students, checkpoints = allocation_step(students, checkpoints, tick)
+
+            # pprint(students)
+
+            total = 0
+            for ch in checkpoints:
+                print('')
+                print(f'{ch.name}: {ch.total}')
+                tick_students = ch.students[-1]
+                surnames = list(map(lambda x: x.surname, tick_students))
+                print(surnames, len(surnames))
+
+                total += ch.total
+            print(f'total: {total / (tick + 1)}')

@@ -30,7 +30,6 @@ class CheckpointModel(CommonModel):
     name: str = Field(),
     timing: TimingEnum = Field(default=TimingEnum.MAX)
     students: list[list[StudentModel]] = Field(default_factory=list)
-    kids: bool = Field(default=False)
 
     @computed_field
     @property

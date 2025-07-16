@@ -32,6 +32,7 @@ admin_callback = CallbackData("admin", "action", "modifier")
 class Admin:
 
     CURRENT_STAGE = 0
+    CURRENT_PHASE = 1
 
     title = 'Администрирование'
 
@@ -68,21 +69,28 @@ class Admin:
         if self.CURRENT_STAGE > 0:
             inline_kb.add(
                 InlineKeyboardButton(
-                    f'Сбросить все в начало',
+                    f'Перейти к старту первой фазы',
                     callback_data=self.callback.new('commit_reset', '0')
                 )
             )
 
             inline_kb.add(
                 InlineKeyboardButton(
-                    f'Отправить sigterm «минута до конца {self.CURRENT_STAGE} этапа»',
+                    f'Перейти к старту второй фазы',
+                    callback_data=self.callback.new('commit_reset2', '0')
+                )
+            )
+
+            inline_kb.add(
+                InlineKeyboardButton(
+                    f'Отправить sigterm «минута до конца {self.CURRENT_STAGE} этапа {self.CURRENT_PHASE} фазы»',
                     callback_data=self.callback.new('sigterm', '1')
                 )
             )
 
         inline_kb.add(
             InlineKeyboardButton(
-                f'Начать {self.CURRENT_STAGE+1} этап!',
+                f'Начать {self.CURRENT_STAGE+1} этап  {self.CURRENT_PHASE} фазы!',
                 callback_data=self.callback.new('commit_stage', str(self.CURRENT_STAGE+1))
             ),
             InlineKeyboardButton(f'⬅', callback_data=self.callback.new('close', '0')),
@@ -107,7 +115,7 @@ class Admin:
         tail_c = ' ✅' if stage == '1' else ''
 
         inline_kb.add(
-            InlineKeyboardButton(f'Подтверждаю сброс в начало' + tail_c,
+            InlineKeyboardButton(f'Подтверждаю переход в начало 1 фазы' + tail_c,
                                  callback_data=self.callback.new('commit_reset', '1')),
             InlineKeyboardButton(f'⬅', callback_data=self.callback.new('action_list', '0')),
         )
@@ -136,6 +144,44 @@ class Admin:
                 chat_id=self.chat_id,
                 text=f"СБРОС ВСЕХ ЭТАПОВ"
             )
+
+    def commit_reset2(self, stage='0'):
+        inline_kb = InlineKeyboardMarkup(row_width=1)
+
+        tail_c = ' ✅' if stage == '1' else ''
+
+        inline_kb.add(
+            InlineKeyboardButton(f'Подтверждаю переход в начало 2 фазы' + tail_c,
+                                 callback_data=self.callback.new('commit_reset2', '1')),
+            InlineKeyboardButton(f'⬅', callback_data=self.callback.new('action_list', '0')),
+        )
+
+        self.bot.edit_message_text(
+            chat_id=self.chat_id,
+            message_id=self.message_id,
+            text=f'<b>{self.title}</b>',
+            reply_markup=inline_kb
+        )
+
+        if '1' == stage:
+            # Надо почистить
+            Admin.CURRENT_PHASE = 2
+            students = get_students_from_db()
+            checkpoints = get_checkpoints_from_db(phase=Admin.CURRENT_PHASE)
+
+            with DBConnector() as cur:
+                for s in students:
+                    s.checkpoints = []
+                    s.save(cur=cur)
+                for c in checkpoints:
+                    c.students = []
+                    c.save(cur=cur)
+
+            self.bot.send_message(
+                chat_id=self.chat_id,
+                text=f"СБРОС ВСЕХ ЭТАПОВ"
+            )
+
 
     def commit_stage(self, stage, committed=False):
 
@@ -171,7 +217,7 @@ class Admin:
         print(f'############ TICK {tick + 1}')
 
         students = get_students_from_db()
-        checkpoints = get_checkpoints_from_db()
+        checkpoints = get_checkpoints_from_db(phase=Admin.CURRENT_PHASE)
         # print(students, checkpoints)
 
         if 0 == tick:
@@ -189,7 +235,7 @@ class Admin:
         total = 0
         for ch in checkpoints:
             print('')
-            print(f'{ch.name}: {ch.total}', 'ТУТ ДЕТИ!' if ch.kids else '')
+            print(f'{ch.name}: {ch.total}')
             tick_students = ch.students[-1]
             surnames = list(map(lambda x: x.surname, tick_students))
             print(surnames, len(surnames))
@@ -216,15 +262,12 @@ class Admin:
             for c in checkpoints:
                 c.save(cur=cur)
 
-                if c.kids:
-                    team = ' мелких детей.'
-                else:
-                    c_students = c.students[-1]
-                    suffix = 'a' if 1 == len(c_students) else ''
-                    team = f' из {len(c_students)} человек{suffix}:\n'
-                    names = [f'{s.name} {s.surname}' for s in c_students]
-                    team += ';\n'.join(names)
-                    team += '.'
+                c_students = c.students[-1]
+                suffix = 'a' if 1 == len(c_students) else ''
+                team = f' из {len(c_students)} человек{suffix}:\n'
+                names = [f'{s.name} {s.surname}' for s in c_students]
+                team += ';\n'.join(names)
+                team += '.'
 
                 prefixes = [
                     'яростно',
@@ -239,6 +282,7 @@ class Admin:
                     'стаей лосей',
                     'на последнем издыхании',
                     'в яростном угаре',
+                    'бодрыми кабанчиками',
                 ]
                 for t in teachers:
                     if t.checkpoint == c.name:
@@ -246,22 +290,13 @@ class Admin:
 
                         self.bot.send_message(
                             chat_id=t.id,
-                            text=f"Препод, {t.name}, вминание! Начался этап #{Admin.CURRENT_STAGE}, "
+                            text=f"Препод, {t.name}, вминание! Начался этап #{Admin.CURRENT_STAGE} {Admin.CURRENT_PHASE} фазы, "
                                  f"к тебе — КП {c.name} — {prefix} мчит команда {team}"
-                        )
-
-                    if t.kids and c.kids:
-                        self.bot.send_message(
-                            chat_id=t.id,
-                            text=f"Препод {t.name} (по мелким), вминание! Начался этап #{Admin.CURRENT_STAGE}, "
-                                 f"собирай своих подопечных и стаей кабанчиков с ними на КП <b>{c.name}</b>"
                         )
 
         # print(students, checkpoints)
 
     def sigterm(self, stage):
-
-        checkpoints = get_checkpoints_from_db()
 
         with DBConnector() as cur:
 
@@ -269,96 +304,13 @@ class Admin:
             for t in cur.fetchall():
                 teacher: TeacherModel = TeacherModel.model_validate(t)
 
-                if teacher.kids:
-                    inline_kb = None
-                    suffix = 'своим мелким'
-                else:
-                    inline_kb = InlineKeyboardMarkup(row_width=1)
-                    inline_kb.add(
-                        InlineKeyboardButton(
-                            f'Оценить команду на {Admin.CURRENT_STAGE} этапе',
-                            callback_data=self.callback.new('rate_team', str(Admin.CURRENT_STAGE))
-                        )
-                    )
-                    suffix = 'текущей команде и не забудь поставить оценку'
-
                 self.bot.send_message(
                     chat_id=teacher.id,
-                    text=f"Препод, {teacher.name}, осталась МИНУТА до конца этапа #{Admin.CURRENT_STAGE}! "
-                         f"\nЗаворачивай потихоньку ласты {suffix}.",
-                    reply_markup=inline_kb
+                    text=f"Препод, {teacher.name}, осталась МИНУТА до конца {Admin.CURRENT_STAGE} этапа {Admin.CURRENT_PHASE} фазы! "
+                         f"\nЗаворачивай потихоньку текущую команду.",
                 )
 
         self.bot.send_message(
             chat_id=self.chat_id,
-            text=f"Sigterm по этапу  #{Admin.CURRENT_STAGE} отправлен"
+            text=f"Sigterm по {Admin.CURRENT_STAGE} этапу {Admin.CURRENT_PHASE} фазы отправлен"
         )
-
-    def rate_team(self, stage):
-
-        tick = int(stage) - 1
-
-        checkpoints = get_checkpoints_from_db()
-        teacher = None
-
-        with DBConnector() as cur:
-
-            cur.execute('select * from teachers')
-
-            for t in cur.fetchall():
-                if t['id'] == self.user_id:
-                    teacher: TeacherModel = TeacherModel.model_validate(t)
-                    break
-
-        if not teacher:
-            self.bot.send_message(
-                chat_id=self.user_id,
-                text=f"Не могу найти вашу регистрацию препода",
-            )
-            return
-
-        checkpoint = None
-        if teacher:
-            for ch in checkpoints:
-                if ch.name == teacher.checkpoint:
-                    checkpoint = ch
-
-        if not checkpoint:
-            self.bot.send_message(
-                chat_id=self.user_id,
-                text=f"Не могу найти закрепленный за вами КП",
-            )
-            return
-
-        replay_kb = ReplyKeyboardMarkup(one_time_keyboard=True)
-        replay_kb.row('1', '2', '3')
-        replay_kb.row('4', '5', '6')
-        replay_kb.row('7', '8', '9')
-        replay_kb.row('10')
-        message = self.bot.send_message(
-            chat_id=self.user_id,
-            text=f"Поставьте оценку от 1 до 10 по этапу #{stage}, где\n"
-                 f"1 — натурально ведро раков,\n"
-                 f"10 — стая ящеров-тащеров",
-            reply_markup=replay_kb
-        )
-
-        students = checkpoint.students[tick]
-
-        self.bot.register_next_step_handler(message, self.save_rate, checkpoint.name, students)
-
-    def save_rate(self, message: Message = None, checkpoint: str = None, students: list[StudentModel] = None):
-        if not message.text.isnumeric():
-            return
-
-        rate = int(message.text)
-
-        with DBConnector() as cur:
-            for s in students:
-                _ = RateModel(
-                    id=s.id,
-                    friend_idx=s.friend_idx,
-                    checkpoint=checkpoint,
-                    rate=rate
-                ).save(cur=cur)
-                # print(_)

@@ -24,8 +24,6 @@ class StudentModel(CommonModel):
     )
     surname: Optional[str] = Field(default=None)
     name: Optional[str] = Field(default=None)
-    school: Optional[str] = Field(default=None)
-    cls: Optional[str] = Field(default=None)
     checkpoints: list[str] = Field(default_factory=list)
 
     # def __str__(self):

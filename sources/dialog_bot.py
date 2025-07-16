@@ -7,7 +7,7 @@ from telebot.types import (
     KeyboardButton,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
-    ChatMemberMember,
+    ChatMember,
     ChatMemberOwner,
     ChatMemberAdministrator,
     CallbackQuery,
@@ -32,7 +32,7 @@ from admin import Admin, admin_callback
 # ~Локальный импорт
 
 
-class DialogWinterBot(ReporterBot):
+class DialogBot(ReporterBot):
 
     def __init__(self, _logger: Logger = None) -> None:
         super().__init__(_logger)
@@ -48,9 +48,13 @@ class DialogWinterBot(ReporterBot):
 
     def is_teacher(self, message):
         # Здесь запрашиваем участника строго конкретного чата:
-        chat_member = self.bot.get_chat_member(user_id=message.from_user.id, chat_id=self.chat_id)
+        chat_member = None
+        try:
+            chat_member = self.bot.get_chat_member(user_id=message.from_user.id, chat_id=self.chat_id)
+        except Exception:
+            pass
 
-        return isinstance(chat_member, ChatMemberMember)
+        return isinstance(chat_member, ChatMember)
 
     def is_admin(self, message) -> bool:
         # Для callback'ов сообщение может быть и от бота
@@ -136,8 +140,7 @@ class DialogWinterBot(ReporterBot):
 
         _, action, modifier = call.data.split(admin_callback.sep)
 
-        # TODO: ПЕРЕДЕЛАТЬ ЭТОТ ПИЗДЕЦ, ПЕРЕНЕСТИ rate_team в ПРЕПОДА!!!
-        if not self.is_admin(call.message) and action != 'rate_team':
+        if not self.is_admin(call.message):
             return
 
         admin = Admin(self.bot, call.message)
@@ -154,7 +157,7 @@ if __name__ == '__main__':
     logging.config.dictConfig(config.logs)
     logger = logging.getLogger('main')
 
-    reporter = DialogWinterBot(logger)
+    reporter = DialogBot(logger)
     attempt = 0
 
     while True:

@@ -37,8 +37,6 @@ class RegisterStudent(Register):
         return all([
             student.surname is not None,
             student.name is not None,
-            student.school is not None,
-            student.cls is not None
         ])
 
     def get_steps(self):
@@ -48,25 +46,17 @@ class RegisterStudent(Register):
 
         tail_sn = student.surname or '❓'
         tail_n = student.name or '❓'
-        tail_s = student.school or '❓'
-        tail_c = student.cls or '❓'
 
         inline_kb.add(
             InlineKeyboardButton(f'Фамилия: {tail_sn}', callback_data=self.register_callback.new(self.role, 'step_surname')),
             InlineKeyboardButton(f'Имя: {tail_n}', callback_data=self.register_callback.new(self.role, 'step_name')),
-            InlineKeyboardButton(f'Школа: {tail_s}', callback_data=self.register_callback.new(self.role, 'step_school')),
-            InlineKeyboardButton(f'Класс: {tail_c}', callback_data=self.register_callback.new(self.role, 'step_class')),
             InlineKeyboardButton(f'⬅', callback_data=self.register_callback.new(self.role, 'step_close')),
         )
-
+        total_cnt = 2
         cnt = 0
         if student.surname:
             cnt += 1
         if student.name:
-            cnt += 1
-        if student.school:
-            cnt += 1
-        if student.cls:
             cnt += 1
 
         finished = '\n<b>РЕГИСТРАЦИЯ ЗАВЕРШЕНА, СПАСИБО!</b>' if self.finished else ''
@@ -74,7 +64,7 @@ class RegisterStudent(Register):
         self.bot.edit_message_text(
             chat_id=self.chat_id,
             message_id=self.message_id,
-            text=f'{self.title}: {cnt} из 4. {finished}',
+            text=f'{self.title}: {cnt} из {total_cnt}. {finished}',
             reply_markup=inline_kb
         )
 
@@ -130,95 +120,6 @@ class RegisterStudent(Register):
 
             student = self.get(id=self.user_id, friend_idx=0)
             student.name = message.text
-            student.save()
-
-            self.bot.delete_message(
-                chat_id=self.chat_id,
-                message_id=message.id,
-            )
-
-            self.bot.delete_message(
-                chat_id=self.chat_id,
-                message_id=init_message.id,
-            )
-
-            self.get_steps()
-
-    def step_school(self, message: Message = None, init_message: Message = None):
-
-        if init_message is None:
-
-            replay_kb = ReplyKeyboardMarkup(one_time_keyboard=True)
-            for r in range(0, 15, 3):
-                replay_kb.row(*[str(k) for k in range(r+1, r+4)])
-
-            sc_list = [
-                'Нужен только номер:',
-                '1–11 — школы Дубны с первой по одиннадцатую;',
-                '12 — лицей «Дубна»;',
-                '13 — лицей Кадышевского;',
-                '14 — Юна;',
-                '15 — любая другая.',
-            ]
-            sc = '\n'.join(sc_list)
-            init_message = self.bot.send_message(
-                chat_id=self.chat_id,
-                text=f"Укажите школу (просто ткните в кнопку). {sc}",
-                reply_markup=replay_kb
-            )
-
-            self.bot.register_next_step_handler(init_message, self.step_school, init_message)
-        else:
-
-            student = self.get(id=self.user_id, friend_idx=0)
-
-            suffixes = {
-                '12': '(лицей «Дубна»)',
-                '13': '(лицей Кадышевского)',
-                '14': '(Юна)',
-                '15': '(другая)',
-            }
-
-            student.school = message.text
-
-            if student.school in suffixes:
-                student.school += f' {suffixes.get(student.school)}'
-
-            student.save()
-
-            self.bot.delete_message(
-                chat_id=self.chat_id,
-                message_id=message.id,
-            )
-
-            self.bot.delete_message(
-                chat_id=self.chat_id,
-                message_id=init_message.id,
-            )
-
-            self.get_steps()
-
-    def step_class(self, message: Message = None, init_message: Message = None):
-        if init_message is None:
-
-            replay_kb = ReplyKeyboardMarkup(one_time_keyboard=True)
-            replay_kb.row('меньше 6')
-            replay_kb.row('6', '7')
-            replay_kb.row('8', '9')
-            replay_kb.row('10', '11')
-            replay_kb.row('больше 11')
-
-            init_message = self.bot.send_message(
-                chat_id=self.chat_id,
-                text=f"Укажите класс (просто ткните в кнопку).",
-                reply_markup=replay_kb
-            )
-
-            self.bot.register_next_step_handler(init_message, self.step_class, init_message)
-        else:
-
-            student = self.get(id=self.user_id, friend_idx=0)
-            student.cls = message.text
             student.save()
 
             self.bot.delete_message(

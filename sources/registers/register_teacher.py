@@ -18,6 +18,7 @@ sys.path.append(__root__.__str__())
 from models import RolesEnum, TeacherModel
 from .register import Register
 from connector import DBConnector
+from utils.allocation import get_checkpoints_from_db, get_students_from_db
 # ~Локальный импорт
 
 
@@ -26,7 +27,6 @@ class RegisterTeacher(Register):
     role: Optional[RolesEnum] = RolesEnum.TEACHER
     title = 'Профиль препода'
 
-    TEACHER_KIDS = 'Сопровождаю мелких детей'
     DELETE_CHECKPOINT = 'Нет КП (удалить)'
 
     teachers: dict[int, TeacherModel] = dict()
@@ -37,7 +37,7 @@ class RegisterTeacher(Register):
 
         return all([
             teacher.name is not None,
-            teacher.checkpoint is not None or teacher.kids,
+            teacher.checkpoint is not None,
         ])
 
     def get_steps(self):
@@ -47,14 +47,12 @@ class RegisterTeacher(Register):
 
         tail_n = teacher.name or '❓'
         tail_c = teacher.checkpoint or '❓'
-
-        if teacher.kids:
-            tail_c = self.TEACHER_KIDS
+        tail_c2 = teacher.checkpoint2 or '❓'
 
         inline_kb.add(
             InlineKeyboardButton(f'Имя: {tail_n}', callback_data=self.register_callback.new(self.role, 'step_name')),
-            InlineKeyboardButton(f'Контрольный пункт: {tail_c}', callback_data=self.register_callback.new(self.role, 'step_checkpoint')),
-            # InlineKeyboardButton('Тайминг:', callback_data=self.register_callback.new(self.role, 'step_timing')),
+            InlineKeyboardButton(f'Контрольный пункт 1 фазы: {tail_c}', callback_data=self.register_callback.new(self.role, 'step_checkpoint')),
+            InlineKeyboardButton(f'Контрольный пункт 2 фазы: {tail_c2}', callback_data=self.register_callback.new(self.role, 'step_checkpoint2')),
             InlineKeyboardButton(f'⬅', callback_data=self.register_callback.new(self.role, 'step_close')),
         )
 
@@ -105,13 +103,10 @@ class RegisterTeacher(Register):
             replay_kb = ReplyKeyboardMarkup(one_time_keyboard=True)
 
             replay_kb.row(self.DELETE_CHECKPOINT)
-            replay_kb.row(self.TEACHER_KIDS)
 
-            with DBConnector() as cursor:
-                cursor.execute('select * from checkpoints order by name')
-
-                for checkpoint in cursor.fetchall():
-                    replay_kb.row(checkpoint['name'])
+            checkpoints = get_checkpoints_from_db(phase=1)
+            for checkpoint in checkpoints:
+                replay_kb.row(checkpoint.name)
 
             init_message = self.bot.send_message(
                 chat_id=self.chat_id,
@@ -126,13 +121,8 @@ class RegisterTeacher(Register):
 
             if self.DELETE_CHECKPOINT == message.text:
                 teacher.checkpoint = None
-                teacher.kids = False
-            elif self.TEACHER_KIDS == message.text:
-                teacher.checkpoint = None
-                teacher.kids = True
             else:
                 teacher.checkpoint = message.text
-                teacher.kids = False
 
             teacher.save()
 
@@ -148,6 +138,47 @@ class RegisterTeacher(Register):
 
             self.get_steps()
 
+    def step_checkpoint2(self, message: Message = None, init_message: Message = None):
+
+        if init_message is None:
+
+            replay_kb = ReplyKeyboardMarkup(one_time_keyboard=True)
+
+            replay_kb.row(self.DELETE_CHECKPOINT)
+
+            checkpoints = get_checkpoints_from_db(phase=2)
+            for checkpoint in checkpoints:
+                replay_kb.row(checkpoint.name)
+
+            init_message = self.bot.send_message(
+                chat_id=self.chat_id,
+                text=f"Укажите КП (просто ткните в кнопку)",
+                reply_markup=replay_kb
+            )
+
+            self.bot.register_next_step_handler(init_message, self.step_checkpoint2, init_message)
+        else:
+
+            teacher = self.get(id=self.user_id)
+
+            if self.DELETE_CHECKPOINT == message.text:
+                teacher.checkpoint2 = None
+            else:
+                teacher.checkpoint2 = message.text
+
+            teacher.save()
+
+            self.bot.delete_message(
+                chat_id=self.chat_id,
+                message_id=message.id,
+            )
+
+            self.bot.delete_message(
+                chat_id=self.chat_id,
+                message_id=init_message.id,
+            )
+
+            self.get_steps()
 
     @classmethod
     def get(cls, id: int) -> TeacherModel:
