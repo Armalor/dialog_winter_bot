@@ -79,7 +79,7 @@ class DialogBot(ReporterBot):
 
         admin = Admin(self.bot, initial_message)
 
-        if admin.CURRENT_STAGE == 0:
+        if initial_message and not self.is_teacher(initial_message) and admin.CURRENT_STAGE == 0:
 
             inline_kb.row(
                 InlineKeyboardButton(

@@ -51,11 +51,11 @@ psql -U postgres -c 'create database dialog_2025_summer_first_day'
 
 ### Создаем таблицы
 ```
-psql -U postgres -d pwd_parser -a -f /var/dialog_winter_bot/query/dialog_2025_summer_first_day.sql
+psql -U postgres -d dialog_2025_summer_first_day -a -f /var/dialog_bot/query/dialog_2025_summer_first_day.sql
 ```
 
 ### Заходим
 
 ```
-psql pwd_parser postgres 
+psql dialog_2025_summer_first_day postgres 
 ```
