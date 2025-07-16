@@ -1,0 +1,17 @@
+[Unit]
+Description=DialogBot Service
+# \cp /var/dialog_bot/sources/dialog_bot.service /etc/systemd/system
+# systemctl enable dialog_bot.service
+# systemctl start dialog_bot.service
+# systemctl status dialog_bot.service
+# journalctl -fu dialog_bot.service
+
+[Service]
+WorkingDirectory=/var/etl
+ExecStart=/bin/python3 /var/dialog_bot/sources/dialog_bot.py
+Restart=always
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
