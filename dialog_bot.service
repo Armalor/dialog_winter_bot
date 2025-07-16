@@ -1,6 +1,6 @@
 [Unit]
 Description=DialogBot Service
-# \cp /var/dialog_bot/sources/dialog_bot.service /etc/systemd/system
+# \cp /var/dialog_bot/dialog_bot.service /etc/systemd/system
 # systemctl enable dialog_bot.service
 # systemctl start dialog_bot.service
 # systemctl status dialog_bot.service
