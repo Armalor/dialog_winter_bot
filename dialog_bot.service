@@ -7,7 +7,7 @@ Description=DialogBot Service
 # journalctl -fu dialog_bot.service
 
 [Service]
-WorkingDirectory=/var/etl
+WorkingDirectory=/var/dialog_bot
 ExecStart=/bin/python3 /var/dialog_bot/sources/dialog_bot.py
 Restart=always
 User=root
