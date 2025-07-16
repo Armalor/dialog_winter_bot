@@ -8,7 +8,7 @@ __root__ = Path(__file__).resolve().parent.parent
 sys.path.append(__root__.__str__())
 from utils._students import students_list
 from utils._checkpoints import checkpoints_list
-from models import StudentModel, CheckpointModel
+from models import StudentModel, CheckpointModel, Checkpoint2Model
 from connector import DBConnector
 from registers import RegisterStudent
 # ~Локальный импорт
@@ -118,10 +118,12 @@ def get_checkpoints_from_db(phase: int = 1) -> list[CheckpointModel]:
     with DBConnector() as cur:
         if phase == 1:
             cur.execute('select * from checkpoints order by name')
+            for ch in cur.fetchall():
+                checkpoints.append(CheckpointModel.model_validate(ch))
         else:
             cur.execute('select * from checkpoints2 order by name')
-        for ch in cur.fetchall():
-            checkpoints.append(CheckpointModel.model_validate(ch))
+            for ch in cur.fetchall():
+                checkpoints.append(Checkpoint2Model.model_validate(ch))
 
     return checkpoints
 
@@ -162,7 +164,7 @@ if __name__ == '__main__':
 
         # students = get_students_from_db()
         students = get_students()
-        # pprint(students)
+        print(len(students))
         checkpoints = get_checkpoints_from_db(phase=phase)
 
         ch_names = list(map(lambda x: x.name, checkpoints))
@@ -187,4 +189,4 @@ if __name__ == '__main__':
                 print(surnames, len(surnames))
 
                 total += ch.total
-            print(f'total: {total / (tick + 1)}')
+            print(f'Всего распределено на этапе: {total / (tick + 1)}')

@@ -7,7 +7,7 @@ from telebot.types import (
     KeyboardButton,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
-    ChatMember,
+    ChatMemberMember,
     ChatMemberOwner,
     ChatMemberAdministrator,
     CallbackQuery,
@@ -54,7 +54,7 @@ class DialogBot(ReporterBot):
         except Exception:
             pass
 
-        return isinstance(chat_member, ChatMember)
+        return isinstance(chat_member, ChatMemberMember) or isinstance(chat_member, ChatMemberOwner) or isinstance(chat_member, ChatMemberAdministrator)
 
     def is_admin(self, message) -> bool:
         # Для callback'ов сообщение может быть и от бота

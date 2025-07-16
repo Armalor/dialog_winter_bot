@@ -67,3 +67,7 @@ if __name__ == '__main__':
 
     # model.save()
     # pprint(model.model_dump(), width=128)
+
+
+class Checkpoint2Model(CheckpointModel):
+    TABLE: ClassVar[str] = 'checkpoints2'

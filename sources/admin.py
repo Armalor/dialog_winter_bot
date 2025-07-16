@@ -130,19 +130,23 @@ class Admin:
         if '1' == stage:
             # Надо почистить
             students = get_students_from_db()
-            checkpoints = get_checkpoints_from_db()
+            checkpoints1 = get_checkpoints_from_db(phase=1)
+            checkpoints2 = get_checkpoints_from_db(phase=2)
 
             with DBConnector() as cur:
                 for s in students:
                     s.checkpoints = []
                     s.save(cur=cur)
-                for c in checkpoints:
+                for c in checkpoints1:
+                    c.students = []
+                    c.save(cur=cur)
+                for c in checkpoints2:
                     c.students = []
                     c.save(cur=cur)
 
             self.bot.send_message(
                 chat_id=self.chat_id,
-                text=f"СБРОС ВСЕХ ЭТАПОВ"
+                text=f"СБРОС ВСЕХ ЭТАПОВ ФАЗЫ 1"
             )
 
     def commit_reset2(self, stage='0'):
@@ -167,21 +171,24 @@ class Admin:
             # Надо почистить
             Admin.CURRENT_PHASE = 2
             students = get_students_from_db()
-            checkpoints = get_checkpoints_from_db(phase=Admin.CURRENT_PHASE)
+            checkpoints1 = get_checkpoints_from_db(phase=1)
+            checkpoints2 = get_checkpoints_from_db(phase=2)
 
             with DBConnector() as cur:
                 for s in students:
                     s.checkpoints = []
                     s.save(cur=cur)
-                for c in checkpoints:
+                for c in checkpoints1:
+                    c.students = []
+                    c.save(cur=cur)
+                for c in checkpoints2:
                     c.students = []
                     c.save(cur=cur)
 
             self.bot.send_message(
                 chat_id=self.chat_id,
-                text=f"СБРОС ВСЕХ ЭТАПОВ"
+                text=f"СБРОС ВСЕХ ЭТАПОВ ФАЗЫ 2"
             )
-
 
     def commit_stage(self, stage, committed=False):
 
@@ -285,7 +292,7 @@ class Admin:
                     'бодрыми кабанчиками',
                 ]
                 for t in teachers:
-                    if t.checkpoint == c.name:
+                    if (t.checkpoint == c.name and Admin.CURRENT_PHASE == 1) or (t.checkpoint2 == c.name and Admin.CURRENT_PHASE == 2):
                         prefix = random.choice(prefixes)
 
                         self.bot.send_message(

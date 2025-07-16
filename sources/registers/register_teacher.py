@@ -124,7 +124,10 @@ class RegisterTeacher(Register):
             else:
                 teacher.checkpoint = message.text
 
-            teacher.save()
+            try:
+                teacher.save()
+            except Exception:
+                teacher.checkpoint = None
 
             self.bot.delete_message(
                 chat_id=self.chat_id,
@@ -166,7 +169,10 @@ class RegisterTeacher(Register):
             else:
                 teacher.checkpoint2 = message.text
 
-            teacher.save()
+            try:
+                teacher.save()
+            except Exception:
+                teacher.checkpoint2 = None
 
             self.bot.delete_message(
                 chat_id=self.chat_id,
