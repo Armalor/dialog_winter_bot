@@ -2,6 +2,7 @@
 Description=DialogBot Service
 # \cp /var/dialog_bot/dialog_bot.service /etc/systemd/system
 # systemctl enable dialog_bot.service
+# systemctl disable dialog_bot.service
 # systemctl start dialog_bot.service
 # systemctl status dialog_bot.service
 # journalctl -fu dialog_bot.service
